@@ -1,0 +1,203 @@
+(footprint "RP2040-Zero_Module"
+  (version 20221018)
+  (generator pcbnew)
+  (layer "F.Cu")
+  (descr "Waveshare RP2040-Zero (18x23.5 mm) on 2x9 pin headers, 15.24 mm row spacing. USB-C at top edge. Verify against your module before ordering.")
+  (tags "RP2040 Zero module")
+  (attr through_hole)
+  (fp_text reference "REF**"
+    (at 0 13)
+    (layer "F.SilkS")
+    (effects
+      (font
+        (size 1 1)
+        (thickness 0.15)
+      )
+    )
+  )
+  (fp_text value "RP2040-Zero"
+    (at 0 0)
+    (layer "F.Fab")
+    (effects
+      (font
+        (size 1 1)
+        (thickness 0.15)
+      )
+    )
+  )
+  (fp_text user "USB-C"
+    (at 0 -9.5)
+    (layer "F.SilkS")
+    (effects
+      (font
+        (size 0.8 0.8)
+        (thickness 0.12)
+      )
+    )
+  )
+  (fp_line
+    (start -9.12 -10.75)
+    (end -9.12 11.87)
+    (stroke
+      (width 0.12)
+      (type solid)
+    )
+    (layer "F.SilkS")
+  )
+  (fp_line
+    (start -9.12 11.87)
+    (end 9.12 11.87)
+    (stroke
+      (width 0.12)
+      (type solid)
+    )
+    (layer "F.SilkS")
+  )
+  (fp_line
+    (start 9.12 11.87)
+    (end 9.12 -10.75)
+    (stroke
+      (width 0.12)
+      (type solid)
+    )
+    (layer "F.SilkS")
+  )
+  (fp_rect
+    (start -9 -11.75)
+    (end 9 11.75)
+    (stroke
+      (width 0.1)
+      (type solid)
+    )
+    (fill none)
+    (layer "F.Fab")
+  )
+  (fp_rect
+    (start -9.25 -12)
+    (end 9.25 12)
+    (stroke
+      (width 0.05)
+      (type solid)
+    )
+    (fill none)
+    (layer "F.CrtYd")
+  )
+  (fp_rect
+    (start -4.5 -12.75)
+    (end 4.5 -5.25)
+    (stroke
+      (width 0.1)
+      (type solid)
+    )
+    (fill none)
+    (layer "F.Fab")
+  )
+  (pad "1" thru_hole rect
+    (at -7.62 -10.16)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "2" thru_hole circle
+    (at -7.62 -7.62)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "3" thru_hole circle
+    (at -7.62 -5.08)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "4" thru_hole circle
+    (at -7.62 -2.54)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "5" thru_hole circle
+    (at -7.62 0)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "6" thru_hole circle
+    (at -7.62 2.54)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "7" thru_hole circle
+    (at -7.62 5.08)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "8" thru_hole circle
+    (at -7.62 7.62)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "9" thru_hole circle
+    (at -7.62 10.16)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "23" thru_hole circle
+    (at 7.62 -10.16)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "22" thru_hole circle
+    (at 7.62 -7.62)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "21" thru_hole circle
+    (at 7.62 -5.08)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "20" thru_hole circle
+    (at 7.62 -2.54)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "19" thru_hole circle
+    (at 7.62 0)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "18" thru_hole circle
+    (at 7.62 2.54)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "17" thru_hole circle
+    (at 7.62 5.08)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "16" thru_hole circle
+    (at 7.62 7.62)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+  (pad "15" thru_hole circle
+    (at 7.62 10.16)
+    (size 1.7 1.7)
+    (drill 1)
+    (layers "*.Cu" "*.Mask")
+  )
+)

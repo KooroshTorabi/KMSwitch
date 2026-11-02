@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name "kmswitch")(type "KiCad")(uri "${KIPRJMOD}/../lib/kmswitch.pretty")(options "")(descr "kmswitch project footprints"))
+)

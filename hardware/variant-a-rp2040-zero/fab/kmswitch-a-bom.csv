@@ -1,0 +1,17 @@
+Comment,Designator,Footprint,Quantity,LCSC Part #,Notes
+100uF 10V,C1,CP_Elec_6.3x7.7,1,C294520,"VT1V101M-CRE77, 100uF 35V 6.3x7.7 (higher voltage is fine)"
+100nF,"C2,C3,C4,C6",C_0805_2012Metric,4,C49678,
+10uF,C5,C_0805_2012Metric,1,C15850,
+B5819W,D1,D_SOD-123,1,C8598,
+2A hold (1812),F1,Fuse_1812_4532Metric,1,C545213,"SMD1812P200TF/16, 2A hold 16V"
+USB-C 5V IN,J1,USB_C_Receptacle_HRO_TYPE-C-31-M-12,1,C165948,
+USB-A host (hub/keyboard),J2,USB_A_Molex_67643_Horizontal,1,n/a,"Molex 67643-0910 through-hole (Mouser/DigiKey/TME), hand-solder"
+104031-0811,J3,microSD_HC_Molex_104031-0811,1,C585350,
+RGB LED (WS2812): 5V DIN GND,J6,PinHeader_1x03_P2.54mm_Vertical,1,n/a,"optional 3-pin header, not assembled (DNP)"
+5.1k,"R1,R2",R_0805_2012Metric,2,C27834,
+22R,"R3,R4",R_0805_2012Metric,2,C17561,
+10k,"R5,R6,R7,R8",R_0805_2012Metric,4,C17414,
+330R,R9,R_0805_2012Metric,1,C17630,
+RP2040-Zero (MCU-A),U1,RP2040-Zero_Module,1,n/a,"Waveshare RP2040-Zero module (not on LCSC) + 2x 1x9 pin headers, hand-solder"
+RP2040-Zero (MCU-B),U2,RP2040-Zero_Module,1,n/a,"Waveshare RP2040-Zero module (not on LCSC) + 2x 1x9 pin headers, hand-solder"
+CA-IS3721HS,U3,SOIC-8_3.9x4.9mm_P1.27mm,1,C428884,

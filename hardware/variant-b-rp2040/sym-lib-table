@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name "kmswitch")(type "KiCad")(uri "${KIPRJMOD}/../lib/kmswitch.kicad_sym")(options "")(descr "kmswitch project symbols"))
+)

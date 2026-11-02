@@ -1,0 +1,22 @@
+** Drc report for /home/claude/kmswitch/hardware/variant-a-rp2040-zero/kmswitch-a.kicad_pcb **
+** Created on 2026-11-02 13:42:28 **
+
+** Found 4 DRC violations **
+[lib_footprint_mismatch]: Footprint 'microSD_HC_Molex_104031-0811' does not match copy in library 'Connector_Card'.
+    Local override; Severity: warning
+    @(117.0000 mm, 141.5000 mm): Footprint J3
+[lib_footprint_mismatch]: Footprint 'USB_C_Receptacle_HRO_TYPE-C-31-M-12' does not match copy in library 'Connector_USB'.
+    Local override; Severity: warning
+    @(136.0000 mm, 104.3000 mm): Footprint J1
+[lib_footprint_mismatch]: Footprint 'RP2040-Zero_Module' does not match copy in library 'kmswitch'.
+    Local override; Severity: warning
+    @(163.0000 mm, 111.7500 mm): Footprint U2
+[lib_footprint_mismatch]: Footprint 'RP2040-Zero_Module' does not match copy in library 'kmswitch'.
+    Local override; Severity: warning
+    @(117.0000 mm, 111.7500 mm): Footprint U1
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** End of Report **

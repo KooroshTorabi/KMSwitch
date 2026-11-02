@@ -1,0 +1,10 @@
+# KiCad local/backup files
+*.kicad_prl
+*-backups/
+fp-info-cache
+*.lck
+# generated while routing
+hardware/*/route/
+tools/__pycache__/
+tools/freerouting.jar
+tools/logs/

@@ -1,0 +1,40 @@
+** Drc report for /home/claude/kmswitch/hardware/variant-b-rp2040/kmswitch-b.kicad_pcb **
+** Created on 2026-11-02 14:17:05 **
+
+** Found 10 DRC violations **
+[lib_footprint_mismatch]: Footprint 'USB_C_Receptacle_HRO_TYPE-C-31-M-12' does not match copy in library 'Connector_USB'.
+    Local override; Severity: warning
+    @(117.0000 mm, 104.3000 mm): Footprint J4
+[lib_footprint_mismatch]: Footprint 'microSD_HC_Molex_104031-0811' does not match copy in library 'Connector_Card'.
+    Local override; Severity: warning
+    @(117.0000 mm, 147.5000 mm): Footprint J3
+[lib_footprint_mismatch]: Footprint 'USB_C_Receptacle_HRO_TYPE-C-31-M-12' does not match copy in library 'Connector_USB'.
+    Local override; Severity: warning
+    @(163.0000 mm, 104.3000 mm): Footprint J5
+[lib_footprint_mismatch]: Footprint 'SW_SPST_PTS810' does not match copy in library 'Button_Switch_SMD'.
+    Local override; Severity: warning
+    @(153.5000 mm, 124.0000 mm): Footprint SW71
+[lib_footprint_mismatch]: Footprint 'SW_SPST_PTS810' does not match copy in library 'Button_Switch_SMD'.
+    Local override; Severity: warning
+    @(107.5000 mm, 128.5000 mm): Footprint SW33
+[lib_footprint_mismatch]: Footprint 'SOIC-8_5.23x5.23mm_P1.27mm' does not match copy in library 'Package_SO'.
+    Local override; Severity: warning
+    @(155.0000 mm, 114.6000 mm): Footprint U51
+[lib_footprint_mismatch]: Footprint 'SOIC-8_5.23x5.23mm_P1.27mm' does not match copy in library 'Package_SO'.
+    Local override; Severity: warning
+    @(109.0000 mm, 114.6000 mm): Footprint U11
+[lib_footprint_mismatch]: Footprint 'SW_SPST_PTS810' does not match copy in library 'Button_Switch_SMD'.
+    Local override; Severity: warning
+    @(153.5000 mm, 128.5000 mm): Footprint SW73
+[lib_footprint_mismatch]: Footprint 'USB_C_Receptacle_HRO_TYPE-C-31-M-12' does not match copy in library 'Connector_USB'.
+    Local override; Severity: warning
+    @(136.0000 mm, 104.3000 mm): Footprint J1
+[lib_footprint_mismatch]: Footprint 'SW_SPST_PTS810' does not match copy in library 'Button_Switch_SMD'.
+    Local override; Severity: warning
+    @(107.5000 mm, 124.0000 mm): Footprint SW31
+
+** Found 0 unconnected pads **
+
+** Found 0 Footprint errors **
+
+** End of Report **
