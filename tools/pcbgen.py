@@ -63,7 +63,7 @@ def build(design, outdir, name, projlib, sym_uuids=None, route=True, passes=40):
         assert fp is not None, c['footprint']
         fp.SetFPID(pcbnew.LIB_ID(lib, fpn))
         fp.SetReference(c['ref']); fp.SetValue(c['value'])
-        if c['ref'][0] in 'RCDF' or (design.get('fab_refs') and c['ref'][0] not in 'JH'):
+        if c['ref'][0] in 'RCDF' or (design.get('fab_refs') and c['ref'][0] not in 'JH') or c['ref'] in design.get('fab_ref_list', ()):
             fp.Reference().SetLayer(pcbnew.F_Fab)
         x, y, rot = c['pcb'][:3]
         side = c['pcb'][3] if len(c['pcb']) > 3 else 'F'

@@ -21,6 +21,7 @@ BIOS, and the two PCs stay galvanically isolated.
 | Shared drive | microSD card, shown as a USB drive on whichever PC is active |
 | Power | 5 V USB-C adapter (2-3 A), so the keyboard works even if PC 1 is off |
 | Isolation | CA-IS3721 digital isolator: PC 1 and PC 2 grounds never touch |
+| ESD protection | USBLC6-2SC6 on the USB-A port (both variants) and on both PC USB-C ports (variant B) |
 | RGB LED (optional) | 3-pin header J6 (5V, DIN, GND) for a WS2812/SK6812 LED or strip, for your own case design |
 
 > **Status:** hardware rev 1.0, not yet built or tested. The firmware is not written yet. See *Before you order* below.
@@ -55,7 +56,7 @@ Both variants have the same features, the same GPIO map (so one firmware fits bo
 | Folder | `hardware/variant-a-rp2040-zero` | `hardware/variant-b-rp2040` |
 | Board | 80 x 48 mm, 2 layers | 80 x 54 mm, 2 layers |
 | MCUs | two Waveshare RP2040-Zero modules on pin headers | two RP2040 + W25Q16 flash + 12 MHz crystal |
-| Assembly | hand-solderable (0805, SOIC, SOD-123) | factory assembly (JLCPCB BOM + CPL included) |
+| Assembly | hand-solderable (0805, SOIC, SOD-123, SOT-23-6) | factory assembly (JLCPCB BOM + CPL included) |
 | PC connections | USB-C on the modules | USB-C on the board |
 | Powered without adapter | no | yes, from PC 1 (adapter and PC 1 are OR-ed by diodes) |
 | Back-feed into a switched-off PC 1 | ~4.7 V can reach PC 1 VBUS through the module | none |
@@ -113,7 +114,7 @@ The KiCad files are saved by KiCad 7 and open in KiCad 7, 8 and 9 (newer version
 | UART1 TX / RX (via isolator) | GP4 / GP5 | GP4 / GP5 |
 | microSD SCK / MOSI / MISO / CS (SPI1) | GP14 / GP15 / GP28 / GP29 | - |
 | microSD card detect | GP26 (switch to GND, use pull-up) | - |
-| Status LED | GP16 WS2812 (A) / GP25 green LED (B) | same |
+| Status LED | GP16 WS2812 (A) / GP16-18 red, green, blue LEDs (B) | same |
 | PC 1 VBUS sense (B only) | GP24 (10k/20k divider) | - |
 | External RGB LED data (header J6) | GP6 (330 Ω series) | - |
 
@@ -131,6 +132,7 @@ PIO-USB needs D- on the pin right after D+ and a system clock that is a multiple
 ### Variant B (factory assembly)
 1. Upload `fab/kmswitch-b-gerbers.zip`, `fab/kmswitch-b-bom.csv` and `fab/kmswitch-b-cpl-jlcpcb.csv` to JLCPCB (or similar).
    Every assembled part has an LCSC / JLCPCB part number in the BOM (table in `tools/export.py`). Stock changes, so check them in the JLCPCB part search before ordering. Parts marked `n/a` are not on LCSC and are hand-soldered: the RP2040-Zero modules (variant A), the through-hole USB-A (Molex 67643-0910) and the optional RGB header J6.
+   In the JLCPCB placement preview, check that pin 1 of U4-U6 (SOT-23-6), U12 / U52 (SOT-23-5) and the LEDs sits on the marked pad; fix the rotation there if not.
 2. Solder the USB-A socket yourself if your assembler does not place through-hole parts.
 3. First flash: hold **BOOT**, tap **RST**, and drag the `.uf2` onto the drive that appears. SWD pads are next to the buttons.
 

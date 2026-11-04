@@ -83,17 +83,21 @@ def core(s, cx, cy, n0, vin, gpio, fdx=0.0):
         C(nx('TP'), 'Connector:TestPoint', 'SWCLK', 'TestPoint:TestPoint_Pad_D1.0mm', {'1': 'SWCLK_' + s}, at(-14.5, 10.0)),
         C(nx('TP'), 'Connector:TestPoint', 'SWDIO', 'TestPoint:TestPoint_Pad_D1.0mm', {'1': 'SWDIO_' + s}, at(-12.5, 10.0)),
         C(nx('TP'), 'Connector:TestPoint', 'GND', 'TestPoint:TestPoint_Pad_D1.0mm', {'1': G}, at(-10.5, 10.0)),
-        # status LED on GP25
-        C(nx('D'), 'Device:LED', 'green', 'LED_SMD:LED_0603_1608Metric', {'1': G, '2': 'LED_K_' + s}, at(8.5, 6.5, 90)),
-        res(nx('R'), '1k', 'LED_' + s, 'LED_K_' + s, at(8.5, 10.0, 90)),
+        # status LED: three 0603 LEDs (red / green / blue) on GPIO16 / 17 / 18, under the case window
+        C('D%d' % (n0 + 27), 'Device:LED', 'red', 'LED_SMD:LED_0603_1608Metric', {'1': G, '2': 'LED_RA_' + s}, at(8.5, 4.65)),
+        C('D%d' % (n0 + 28), 'Device:LED', 'green', 'LED_SMD:LED_0603_1608Metric', {'1': G, '2': 'LED_GA_' + s}, at(8.5, 6.3)),
+        C('D%d' % (n0 + 29), 'Device:LED', 'blue', 'LED_SMD:LED_0603_1608Metric', {'1': G, '2': 'LED_BA_' + s}, at(8.5, 7.95)),
+        res('R%d' % (n0 + 27), '1k', 'LED_R_' + s, 'LED_RA_' + s, at(7.0, 10.2, 90)),
+        res('R%d' % (n0 + 28), '330R', 'LED_G_' + s, 'LED_GA_' + s, at(8.5, 10.2, 90)),
+        res('R%d' % (n0 + 29), '100R', 'LED_B_' + s, 'LED_BA_' + s, at(10.0, 10.2, 90)),
     ]
     return c
 
 
 gA = {'GPIO2': 'USBH_DP', 'GPIO3': 'USBH_DM', 'GPIO4': 'UART_TX_A', 'GPIO5': 'UART_RX_A',
       'GPIO14': 'SD_SCK', 'GPIO15': 'SD_MOSI', 'GPIO28': 'SD_MISO', 'GPIO29': 'SD_CS', 'GPIO26': 'SD_DET',
-      'GPIO24': 'VBUS_SENSE_A', 'GPIO25': 'LED_A', 'GPIO6': 'RGB_DATA'}
-gB = {'GPIO4': 'UART_TX_B', 'GPIO5': 'UART_RX_B', 'GPIO25': 'LED_B'}
+      'GPIO24': 'VBUS_SENSE_A', 'GPIO6': 'RGB_DATA', 'GPIO16': 'LED_R_A', 'GPIO17': 'LED_G_A', 'GPIO18': 'LED_B_A'}
+gB = {'GPIO4': 'UART_TX_B', 'GPIO5': 'UART_RX_B', 'GPIO16': 'LED_R_B', 'GPIO17': 'LED_G_B', 'GPIO18': 'LED_B_B'}
 
 coreA = core('A', 20, 22, 10, '+5V_SYS_A', gA)
 coreB = core('B', 66, 22, 50, 'VBUS_PC2', gB)
@@ -113,11 +117,13 @@ comps = [
     R('R40', '5.1k', 'CC1_PC1', 'GND_A', (24.0, 10.8, 90), fp=R0603),
     R('R41', '5.1k', 'CC2_PC1', 'GND_A', (25.6, 10.8, 90), fp=R0603),
     R('R42', '10k', 'VBUS_PC1', 'VBUS_SENSE_A', (5.0, 37.0, 90), fp=R0603),
+    esd('U5', 'USB_DM_C_A', 'USB_DP_C_A', 'VBUS_PC1', 'GND_A', (17.0, 11.45, 0)),
     R('R43', '20k', 'VBUS_SENSE_A', 'GND_A', (6.6, 37.0, 90), fp=R0603),
     # ---- USB host port
     usb_a('J2', '+5V_HOST', 'USBH_DM_C', 'USBH_DP_C', 'GND_A', (30.5, 40.5, 0)),
     R('R3', '22R', 'USBH_DP', 'USBH_DP_C', (35, 35, 90), fp=R0603),
     R('R4', '22R', 'USBH_DM', 'USBH_DM_C', (32, 35, 90), fp=R0603),
+    esd('U4', 'USBH_DP_C', 'USBH_DM_C', '+5V_HOST', 'GND_A', (38.0, 32.4, 0)),
     # ---- microSD
     microsd('J3', 'SD_CS', 'SD_MOSI', 'SD_SCK', 'SD_MISO', 'SD_DAT1', 'SD_DAT2', 'SD_DET', '+3V3_A', 'GND_A', (17, 47.5, 0)),
     R('R5', '10k', '+3V3_A', 'SD_CS', (12, 36, 90), fp=R0603),
@@ -134,6 +140,7 @@ comps = [
     usb_c('J5', 'USB-C to PC 2', 'VBUS_PC2', 'GND_B', 'CC1_PC2', 'CC2_PC2', 'USB_DP_C_B', 'USB_DM_C_B', pcb=(63, 4.3, 180)),
     R('R44', '5.1k', 'CC1_PC2', 'GND_B', (70.0, 10.8, 90), fp=R0603),
     R('R45', '5.1k', 'CC2_PC2', 'GND_B', (71.6, 10.8, 90), fp=R0603),
+    esd('U6', 'USB_DM_C_B', 'USB_DP_C_B', 'VBUS_PC2', 'GND_B', (63.0, 11.45, 0)),
     # ---- optional external RGB LED (WS2812 / SK6812 chain): 5V, DIN, GND
     C('J6', 'Connector_Generic:Conn_01x03', 'RGB LED (WS2812): 5V DIN GND', 'Connector_PinHeader_2.54mm:PinHeader_1x03_P2.54mm_Vertical',
       {'1': '+5V_SYS_A', '2': 'RGB_DIN', '3': 'GND_A'}, (22.5, 35.5, 90)),
@@ -148,14 +155,14 @@ blocks = [
     ('Power input - 5 V adapter (J1) OR-ed with PC 1 VBUS (D2/D3)', _pick(('J1', 'R1', 'R2', 'D2', 'D3', 'F1', 'C1', 'C2')),
      'D2/D3 make the adapter and PC 1 share the load without ever back-feeding each other.\n'
      'Works without the adapter as long as PC 1 is on; with the adapter the keyboard works while PC 1 is off.'),
-    ('PC 1 USB-C (device) + VBUS sense on GPIO24', _pick(('J4', 'R40', 'R41', 'R42', 'R43')), None),
+    ('PC 1 USB-C (device) + VBUS sense on GPIO24', _pick(('J4', 'U5', 'R40', 'R41', 'R42', 'R43')), None),
     ('MCU-A - RP2040 (USB host, router, microSD)', coreA,
-     'GPIO2/3 = PIO-USB host, GPIO4/5 = UART1, GPIO14/15/28/29 = SPI1 + CS, GPIO26 = card detect, GPIO25 = LED. Same pin map as variant A.'),
-    ('USB host port (keyboard, mouse, dongle or hub)', _pick(('J2', 'R3', 'R4')), None),
+     'GPIO2/3 = PIO-USB host, GPIO4/5 = UART1, GPIO14/15/28/29 = SPI1 + CS, GPIO26 = card detect, GPIO16/17/18 = status LED red/green/blue.'),
+    ('USB host port (keyboard, mouse, dongle or hub)', _pick(('J2', 'U4', 'R3', 'R4')), None),
     ('microSD - shared drive', _pick(('J3', 'R5', 'R6', 'R7', 'R8', 'C5', 'C6')), None),
     ('Galvanic isolation (GND_A and GND_B never meet)', _pick(('U3', 'C3', 'C4')),
      'CA-IS3721HS (pin compatible with ADuM1201).'),
-    ('PC 2 USB-C (device, powers side B)', _pick(('J5', 'R44', 'R45')), None),
+    ('PC 2 USB-C (device, powers side B)', _pick(('J5', 'U6', 'R44', 'R45')), None),
     ('MCU-B - RP2040', coreB, None),
     ('Optional RGB LED header (WS2812/SK6812): 5V, DIN, GND', _pick(('J6', 'R9')),
      'Data from GPIO6 through R9 (same pin as variant A).'),
@@ -166,14 +173,14 @@ pwr_flags = ['+5V_IN', 'VBUS_PC1', 'VBUS_PC2', '+5V_SYS_A', 'GND_A', 'GND_B']
 
 W, H = 80, 54
 design = dict(
-    size=(W, H), comps=comps, fab_refs=True, default_track=0.16, default_clearance=0.15,
+    size=(W, H), comps=comps, fab_refs=True, fab_ref_list=('J4', 'J5'), default_track=0.16, default_clearance=0.15,
     keepouts=[(43.3, 0.5, 44.7, 53.5)],
     pours=[('GND_A', [(0.5, 0.5), (42.9, 0.5), (42.9, 53.5), (0.5, 53.5)]),
            ('GND_B', [(45.1, 0.5), (79.5, 0.5), (79.5, 53.5), (45.1, 53.5)])],
     power_nets={'+5V_IN': 0.6, '+5V_HOST': 0.8, '+5V_SYS_A': 0.6, 'VBUS_PC1': 0.5, 'VBUS_PC2': 0.5},
-    stubs=[(j, p, 0, 1.7, 0.5, True) for j in ('J1', 'J4', 'J5') for p in ('A9', 'A4')],
+    stubs=[(j, p, 0, 1.7, 0.5, True) for j in ('J1', 'J4', 'J5') for p in ('A9', 'A4')] + [('U4', '5', 1.3, 0, 0.4, True)],
     texts=[('kmswitch  B  rev 1.0', 64, 42, 1.2), ('2x RP2040', 64, 44.5, 0.9),
-           ('PC 1', 17, 12.6, 0.8), ('PC 2', 63, 12.6, 0.8), ('5V IN', 29, 11, 0.8),
+           ('PC 1', 24.8, 14.0, 0.8), ('PC 2', 70.8, 14.0, 0.8), ('5V IN', 29, 11, 0.8),
            ('BOOT', 3.9, 24, 0.8, 'F', 90), ('RST', 3.9, 28.5, 0.8, 'F', 90),
            ('BOOT', 49.9, 24, 0.8, 'F', 90), ('RST', 49.9, 28.5, 0.8, 'F', 90),
            ('SWD', 3.4, 32, 0.8, 'F', 90), ('SWD', 49.4, 32, 0.8, 'F', 90),

@@ -149,6 +149,8 @@ class Sheet:
             fp = ((x + bx1 + 0.8, y - 1.27, 'left'), (x + bx1 + 0.8, y + 1.27, 'left'))
         elif fields_at == 'top':
             fp = ((x + (bx0 + bx1) / 2, y + by0 - 4.4, None), (x + (bx0 + bx1) / 2, y + by0 - 1.8, None))
+        elif fields_at == 'corners':      # ref above-right, value below-right (parts with pins on all sides)
+            fp = ((x + bx1 + 0.6, y + by0 - 0.9, 'left'), (x + bx1 + 0.6, y + by1 + 1.3, 'left'))
         elif fields_at == 'left':
             fp = ((x + bx0 - 0.8, y - 1.27, 'right'), (x + bx0 - 0.8, y + 1.27, 'right'))
         else:
@@ -316,15 +318,37 @@ class Sheet:
             if net in self.labelled or net in self.quiet or POWER_NET.match(net):
                 continue
             locs = {(p['x'], p['y']) for (r, n), p in self.pins.items() if self.net(r, n) == net}
-            segs = [w for w in self.wires if w[0] in locs or w[1] in locs]
-            if not segs:
+            # every separate wired group of this net gets its own label (e.g. both sides of a pass-through part)
+            for segs in self._groups_at(locs):
+                hs = [w for w in segs if w[0][1] == w[1][1]] or segs
+                (ax, ay), (bx, by) = max(hs, key=lambda w: abs(w[0][0] - w[1][0]) + abs(w[0][1] - w[1][1]))
+                if ay == by:
+                    self._label(net, min(ax, bx) + 1.27, ay, 1, 0)
+                else:
+                    self._label(net, ax, max(ay, by) - 1.27, 0, -1)
+
+    def _groups_at(self, locs):
+        """Connected wire groups that touch any of the pin locations."""
+        def on(pt, w):
+            (ax, ay), (bx, by) = w
+            x, y = pt
+            return (ax == bx == x and min(ay, by) <= y <= max(ay, by)) or (ay == by == y and min(ax, bx) <= x <= max(ax, bx))
+        def touch(w1, w2):
+            return any(on(p, w2) for p in w1) or any(on(p, w1) for p in w2)
+        seen, groups = set(), []
+        for i, w in enumerate(self.wires):
+            if i in seen or not any(on(l, w) and l in (w[0], w[1]) for l in locs):
                 continue
-            hs = [w for w in segs if w[0][1] == w[1][1]] or segs
-            (ax, ay), (bx, by) = max(hs, key=lambda w: abs(w[0][0] - w[1][0]) + abs(w[0][1] - w[1][1]))
-            if ay == by:
-                self._label(net, min(ax, bx) + 1.27, ay, 1, 0)
-            else:
-                self._label(net, ax, max(ay, by) - 1.27, 0, -1)
+            grp, todo = [], [i]
+            seen.add(i)
+            while todo:
+                k = todo.pop()
+                grp.append(self.wires[k])
+                for j, w2 in enumerate(self.wires):
+                    if j not in seen and touch(self.wires[k], w2):
+                        seen.add(j); todo.append(j)
+            groups.append(grp)
+        return groups
 
     def _hidden(self, ref, num):
         return any(p['number'] == num and p['hidden'] for p in self.libs.pins(self.comps[ref]['lib_id']))

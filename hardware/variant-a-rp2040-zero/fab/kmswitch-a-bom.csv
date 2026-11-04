@@ -15,3 +15,4 @@ RGB LED (WS2812): 5V DIN GND,J6,PinHeader_1x03_P2.54mm_Vertical,1,n/a,"optional 
 RP2040-Zero (MCU-A),U1,RP2040-Zero_Module,1,n/a,"Waveshare RP2040-Zero module (not on LCSC) + 2x 1x9 pin headers, hand-solder"
 RP2040-Zero (MCU-B),U2,RP2040-Zero_Module,1,n/a,"Waveshare RP2040-Zero module (not on LCSC) + 2x 1x9 pin headers, hand-solder"
 CA-IS3721HS,U3,SOIC-8_3.9x4.9mm_P1.27mm,1,C428884,
+USBLC6-2SC6,U4,SOT-23-6,1,C7519,

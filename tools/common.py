@@ -59,5 +59,11 @@ def microsd(ref, cs, mosi, sck, miso, dat1, dat2, det, vdd, gnd, pcb):
               '9': det, '10': gnd, '11': gnd}, pcb)
 
 
+def esd(ref, dp, dm, vbus, gnd, pcb):
+    """USBLC6-2SC6 TVS array: D+ through pins 1/6, D- through 3/4."""
+    return C(ref, 'Power_Protection:USBLC6-2SC6', 'USBLC6-2SC6', 'Package_TO_SOT_SMD:SOT-23-6',
+             {'1': dp, '6': dp, '3': dm, '4': dm, '5': vbus, '2': gnd}, pcb, fields={'LCSC': 'C7519'})
+
+
 def hole(ref, pcb):
     return C(ref, 'Mechanical:MountingHole', 'M2.5', HOLE, {}, pcb)

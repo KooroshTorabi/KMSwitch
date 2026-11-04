@@ -12,7 +12,7 @@ def u(*v):
 NOTES = """GPIO map (same as variant A, one firmware for both)
   GPIO2 / GPIO3: USB host D+ / D- (PIO-USB, 22 ohm series).   GPIO4 / GPIO5: UART1 TX / RX through the isolator.
   GPIO14 / GPIO15 / GPIO28 / GPIO29: SPI1 SCK / MOSI / MISO and card CS.   GPIO26: card detect.   GPIO6: external RGB LED (J6).
-  GPIO24: PC 1 VBUS sense (10k / 20k divider).   GPIO25: green status LED.
+  GPIO24: PC 1 VBUS sense (10k / 20k divider).   GPIO16 / 17 / 18: status LED red / green / blue.
 
 Power domains
   side A (GND_A): adapter (J1) and PC 1 VBUS (J4) are OR-ed by D2 / D3 into +5V_SYS_A, which feeds the USB host port (through F1),
@@ -22,20 +22,27 @@ Power domains
 First flash: hold BOOTSEL, tap RESET, copy the .uf2 to the drive that appears. SWD pads (SWCLK, SWDIO, GND) for a debugger."""
 
 
-def usb_dev(sh, J, ra, rb, rdm, rdp, x, y):
-    """USB-C device port with CC pull-downs and the 27 ohm series resistors of the MCU's USB pins."""
+def usb_dev(sh, J, ra, rb, rdm, rdp, esd, x, y):
+    """USB-C device port with CC pull-downs, ESD array and the 27 ohm series resistors of the MCU's USB pins."""
     p, wire = sh.put, sh.wire
     p(J, *u(x, y), fields_at='top')
     X = x + 6
     wire(u(X, y - 1), u(X + 3, y - 1), u(X + 3, y)); wire(u(X, y), u(X + 3, y))       # D- pair
     wire(u(X, y + 1), u(X + 2, y + 1), u(X + 2, y + 2)); wire(u(X, y + 2), u(X + 2, y + 2))  # D+ pair
-    p(rdm, *u(X + 9.5, y - 1), rot=270); p(rdp, *u(X + 9.5, y + 2), rot=270)
-    wire(u(X + 3, y - 1), u(X + 8, y - 1)); wire(u(X + 2, y + 2), u(X + 8, y + 2))
+    # ESD array in line: D- through pins 3/4, D+ through 1/6
+    p(esd, *u(X + 8.5, y - 1), fields_at='corners')
+    wire(u(X + 3, y - 1), u(X + 6.5, y - 1))
+    wire(u(X + 2, y + 2), u(X + 5.5, y + 2), u(X + 5.5, y), u(X + 6.5, y))
+    dm, dp = sh.net(J, 'A7'), sh.net(J, 'A6')
+    for net, lx, ly in ((dm, X + 0.5, y - 1), (dp, X + 0.5, y + 1), (dm, X + 11, y - 1), (dp, X + 11, y)):
+        sh._label(net, *u(lx, ly), 1, 0)
+    sh.pwr(esd, '5', 2.54, (0, -1)); sh.pwr(esd, '2', 0, (0, 1))
+    p(rdm, *u(X + 17.5, y - 1), rot=270); p(rdp, *u(X + 17.5, y + 2), rot=270)
+    wire(u(X + 10.5, y - 1), u(X + 16, y - 1)); wire(u(X + 10.5, y), u(X + 15, y), u(X + 15, y + 2), u(X + 16, y + 2))
     sh.lab(rdm, '1', 2.54); sh.lab(rdp, '1', 2.54)
-    sh.quiet |= {sh.net(J, 'A6'), sh.net(J, 'A7')}
     sh.lab(J, 'A5', 2.54); sh.lab(J, 'B5', 2.54)
-    p(ra, *u(X + 3, y + 8.5)); p(rb, *u(X + 9, y + 8.5))
-    sh.text('CC pull-downs: 5.1k = USB device', *u(X + 1, y + 12.5), 1.27, bold=False)
+    p(ra, *u(X + 3, y + 10.5)); p(rb, *u(X + 13, y + 10.5))
+    sh.text('CC pull-downs: 5.1k = USB device', *u(X + 1, y + 14.5), 1.27, bold=False)
     wire(u(x - 3, y + 9), u(x - 3, y + 10), u(x, y + 10)); wire(u(x, y + 9), u(x, y + 10))
     sh.power(sh.net(J, 'A1'), *u(x, y + 10), (0, 1))
     return X
@@ -63,7 +70,7 @@ def core(sh, s, cx, cy):
     wire(u(X(-10), Yy(7)), u(X(-13), Yy(7)))
     wire(u(X(-16), Yy(7)), u(X(-27), Yy(7))); wire(u(X(-22), Yy(6)), u(X(-22), Yy(7)))
     sh.pwr(Y, '2', 0, (0, 1)); sh.pwr(Y, '4', 0, (0, 1))
-    sh.quiet |= {'XIN_' + s, 'XOUT_' + s, 'XOUT_R_' + s, 'BOOT_' + s, 'LED_K_' + s}
+    sh.quiet |= {'XIN_' + s, 'XOUT_' + s, 'XOUT_R_' + s, 'BOOT_' + s, 'LED_RA_' + s, 'LED_GA_' + s, 'LED_BA_' + s}
     # flash
     p(FL, *u(X(-32), Yy(-6)))
     p(c[18], *u(X(-25), Yy(-9.5)))
@@ -99,11 +106,14 @@ def core(sh, s, cx, cy):
     for i, ref in enumerate(c[27:30]):
         p(ref, *u(X(-44 + 3 * i), Yy(22)))
     sh.text('SWD pads', *u(X(-45), Yy(18.5)), 1.27, bold=False)
-    # status LED
-    p(c[31], *u(X(16.5), Yy(21)), rot=90); p(c[30], *u(X(22.5), Yy(21)), rot=180)
-    wire(u(X(18), Yy(21)), u(X(21), Yy(21)))
-    sh.lab(c[31], '1', 2.54); sh.pwr(c[30], '1', 2.54, (0, 1))
-    sh.text('status LED', *u(X(15), Yy(18)), 1.27, bold=False)
+    # status LED: red / green / blue
+    for i in range(3):
+        led, r = c[30 + i], c[33 + i]
+        yy = Yy(22 + 4 * i)
+        p(r, *u(X(16.5), yy), rot=90); p(led, *u(X(23.5), yy), rot=180)
+        wire(u(X(18), yy), u(X(22), yy))
+        sh.lab(r, '1', 2.54); sh.pwr(led, '1', 2.54, (0, 1))
+    sh.text('status LED (red / green / blue)', *u(X(15), Yy(18)), 1.27, bold=False)
 
 
 def draw(sh: Sheet):
@@ -132,22 +142,27 @@ def draw(sh: Sheet):
 
     # ------------------------------------------------------------ PC 1 USB-C
     sh.frame('PC 1: USB-C device port + VBUS sense', *u(62, 5, 106, 45),
-             'MCU-A enumerates on PC 1 (27 ohm series R28 / R29).\nGPIO24 sees PC 1 VBUS through R42 / R43.')
-    X = usb_dev(sh, 'J4', 'R40', 'R41', 'R29', 'R28', 68, 21)
-    wire(u(74, 15), u(96, 15))
+             'MCU-A enumerates on PC 1 (27 ohm series R28 / R29, ESD array U5).\nGPIO24 sees PC 1 VBUS through R42 / R43.')
+    X = usb_dev(sh, 'J4', 'R40', 'R41', 'R29', 'R28', 'U5', 68, 21)
+    wire(u(74, 15), u(99, 15))
     sh.power('VBUS_PC1', *u(77, 15), (0, -1)); sh.flag(*u(81, 15))
-    p('R42', *u(96, 16.5)); p('R43', *u(96, 21.5))
-    wire(u(96, 18), u(96, 20)); wire(u(96, 19), u(98, 19))
-    sh._label('VBUS_SENSE_A', *u(98, 19), 1, 0)
+    p('R42', *u(99, 16.5)); p('R43', *u(99, 21.5))
+    wire(u(99, 18), u(99, 20)); wire(u(99, 19), u(100, 19))
+    sh._label('VBUS_SENSE_A', *u(100, 19), 1, 0)
 
     # ------------------------------------------------------------ USB host port
     sh.frame('USB host port: keyboard, mouse, dongle or hub', *u(108, 5, 144, 45),
-             'USBH_DP / USBH_DM come from MCU-A GPIO2 / GPIO3 (PIO-USB host).')
+             'USBH_DP / USBH_DM come from MCU-A GPIO2 / GPIO3 (PIO-USB host).\nU4 (USBLC6-2SC6) clamps ESD on the port.')
     p('J2', *u(114, 21), fields_at='top')
-    p('R3', *u(125.5, 21), rot=270); p('R4', *u(125.5, 24), rot=270)
-    link(('J2', '3'), ('R3', '2'))
-    link(('J2', '2'), ('R4', '2'), via=[u(120, 22), u(120, 24)])
-    sh.pwr('J2', '1', 2.54 * 5, (0, -1))
+    p('U4', *u(124, 21), fields_at='corners')
+    link(('J2', '3'), ('U4', '1'))
+    link(('J2', '2'), ('U4', '3'))
+    vb = sh.P('J2', '1')
+    link(('J2', '1'), ('U4', '5'), first='h'); sh.power('+5V_HOST', sh.P('U4', '5')['x'], vb['y'], (0, -1))
+    sh.pwr('U4', '2', 0, (0, 1))
+    p('R3', *u(135.5, 21), rot=270); p('R4', *u(135.5, 24), rot=270)
+    link(('U4', '6'), ('R3', '2'))
+    link(('U4', '4'), ('R4', '2'), via=[u(132, 22), u(132, 24)])
     wire(u(113, 25), u(113, 26), u(114, 26)); wire(u(114, 25), u(114, 26))
     sh.power('GND_A', *u(114, 26), (0, 1))
     sh.lab('R3', '1', 2.54 * 2); sh.lab('R4', '1', 2.54 * 2)
@@ -162,17 +177,17 @@ def draw(sh: Sheet):
     sh.pwr('J6', '1', 2.54 * 2, (0, -1)); sh.pwr('J6', '3', 2.54 * 2, (0, 1))
 
     # ------------------------------------------------------------ PC 2 USB-C
-    sh.frame('PC 2: USB-C device port (powers side B)', *u(179, 5, 213, 45),
-             'MCU-B enumerates on PC 2 (27 ohm series R68 / R69)\nand runs from its VBUS.')
-    usb_dev(sh, 'J5', 'R44', 'R45', 'R69', 'R68', 185, 21)
+    sh.frame('PC 2: USB-C device port (powers side B)', *u(179, 5, 217, 45),
+             'MCU-B enumerates on PC 2 (27 ohm series R68 / R69,\nESD array U6) and runs from its VBUS.')
+    usb_dev(sh, 'J5', 'R44', 'R45', 'R69', 'R68', 'U6', 185, 21)
     wire(u(191, 15), u(196, 15))
     sh.power('VBUS_PC2', *u(196, 15), (0, -1)); sh.flag(*u(194, 15))
     sh.flag(*u(185, 31), (1, 0))
 
     # ------------------------------------------------------------ mechanical
-    sh.frame('Mounting holes', *u(215, 5, 229, 45))
+    sh.frame('Mounting holes', *u(219, 5, 229, 45))
     for i, h in enumerate(('H1', 'H2', 'H3', 'H4')):
-        p(h, *u(219 + 6 * (i % 2), 18 + 8 * (i // 2)))
+        p(h, *u(222 + 4 * (i % 2), 18 + 8 * (i // 2)))
 
     # ------------------------------------------------------------ MCU-A core
     sh.frame('MCU-A: RP2040 (USB host, router, microSD; enumerates on PC 1)', *u(4, 47, 96, 122))
