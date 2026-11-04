@@ -1,5 +1,5 @@
 # kmswitch settings. Every line is optional: a missing or wrong value uses the default.
-# Full description: docs/configuration.md.  Visual editor: KMSWITCH.HTM on this drive.
+# Full description: docs/configuration.md.  Settings page: http://192.168.7.1 or KMSWITCH.HTM on this drive.
 
 [general]
 layout = right            # where PC 2's screen is, seen from PC 1: right | left | above | below
@@ -7,30 +7,33 @@ edge_switch = on          # switch by pushing the pointer past the screen edge
 edge_delay_ms = 0         # 0-1000: stay at the edge this long before switching
 edge_corner_block = on    # no switch while the pointer is in a screen corner
 start_on = pc1            # pc1 | pc2 | last
-config_ui = on            # allow the open_config hotkey
+usb_network = on          # settings page at http://192.168.7.1 on both PCs
+auto_measure = on         # measure a newly connected PC by itself
+config_ui = on            # allow the open_config and measure hotkeys to type into the PC
 
-[hotkeys]                 # modifiers CTRL SHIFT ALT WIN (+ RCTRL RSHIFT RALT RWIN) + one key, or none
+[hotkeys]                 # modifiers CTRL ALT WIN SHIFT (+ RCTRL RALT RWIN RSHIFT) + one key, or none
 switch = WIN+F12
 relative_mode = WIN+F11   # relative mouse for games; pauses edge switching
 speed_up = WIN+SHIFT+UP
 speed_down = WIN+SHIFT+DOWN
 speed_reset = WIN+SHIFT+HOME
 open_config = WIN+F10
+measure = WIN+F9          # measure the screens of both PCs (LEDs blink)
 
 [pc1]
 name = PC 1
-aspect = 16:9             # shape of the whole desktop: 16:9 16:10 21:9 32:9 4:3 5:4 9:16 or W:H
 speed_x = 1.0             # 0.25-4.0
 speed_y = 1.0             # 0.25-4.0
 accel = medium            # off | low | medium | high
 y_offset = 0              # -50..50 % of screen height (layout right / left)
 x_offset = 0              # -50..50 % of screen width (layout above / below)
-os = windows              # windows | mac | linux (for open_config only)
-kbd_layout = us           # us de at ch fr uk it es (for open_config only)
+os = windows              # windows | mac | linux (for typed commands)
+kbd_layout = us           # us de at ch fr uk it es (for typed commands)
+monitors =                # written by the box when it measures: WxH+X+Y@scale, ...
+aspect = 16:9             # used only while monitors is empty: 16:9 16:10 21:9 32:9 4:3 5:4 9:16 or W:H
 
 [pc2]
 name = PC 2
-aspect = 16:9
 speed_x = 1.0
 speed_y = 1.0
 accel = medium
@@ -38,3 +41,5 @@ y_offset = 0
 x_offset = 0
 os = windows
 kbd_layout = us
+monitors = 
+aspect = 16:9

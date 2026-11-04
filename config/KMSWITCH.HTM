@@ -7,12 +7,12 @@
 <style>
   :root {
     --bg: #f4f5f7; --card: #ffffff; --ink: #1d2330; --muted: #667085; --line: #e3e6eb;
-    --accent: #2f6fed; --accent-soft: #e8efff; --pc1: #2f6fed; --pc2: #e2742f; --ok: #1f8a4c; --warn: #b54708;
+    --accent: #2f6fed; --accent-soft: #e8efff; --pc1: #2f6fed; --pc2: #e2742f; --ok: #1f8a4c; --warn: #b54708; --off: #98a2b3;
     --radius: 10px;
   }
   @media (prefers-color-scheme: dark) {
     :root { --bg: #14171c; --card: #1d2128; --ink: #e8ebf0; --muted: #98a2b3; --line: #2c323c;
-            --accent: #6b9bff; --accent-soft: #233150; --pc1: #6b9bff; --pc2: #f29a5c; }
+            --accent: #6b9bff; --accent-soft: #233150; --pc1: #6b9bff; --pc2: #f29a5c; --ok: #4cc38a; --warn: #f0a35e; --off: #5d6675; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
@@ -22,11 +22,16 @@
   header h1 { font-size: 17px; margin: 0 8px 0 0; letter-spacing: .2px; }
   header .status { color: var(--muted); font-size: 13px; flex: 1; min-width: 180px; }
   header .status b { color: var(--ink); font-weight: 600; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; border: 1px solid var(--line);
+          border-radius: 20px; padding: 3px 10px; color: var(--muted); }
+  .pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--off); display: inline-block; flex: none; margin-right: 2px; }
+  .pill.on i { background: var(--ok); }
+  .pill.active { border-color: var(--accent); color: var(--ink); }
   button { font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--ink);
            padding: 7px 14px; border-radius: 8px; cursor: pointer; }
-  button:hover { border-color: var(--accent); }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: .5; cursor: default; }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-  button.primary:hover { filter: brightness(1.08); }
   main { max-width: 1180px; margin: 0 auto; padding: 18px 20px 40px; display: grid; gap: 16px;
          grid-template-columns: 1fr 1fr; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
@@ -46,14 +51,25 @@
   .seg button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
   .switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
   .switch input { width: 34px; height: 20px; appearance: none; background: var(--line); border-radius: 20px;
-                  position: relative; cursor: pointer; transition: background .15s; margin: 0; }
+                  position: relative; cursor: pointer; transition: background .15s; margin: 0; flex: none; }
   .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
                          border-radius: 50%; background: #fff; transition: left .15s; }
   .switch input:checked { background: var(--accent); }
   .switch input:checked::after { left: 16px; }
-  #screens { width: 100%; height: 280px; display: block; }
+  #screens { width: 100%; height: 300px; display: block; }
   .pcs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .pc h2 { display: flex; align-items: center; gap: 8px; }
+  .pc h2 .pill { margin-left: auto; }
+  fieldset { border: 0; margin: 0; padding: 0; min-width: 0; }
+  fieldset:disabled { opacity: .45; }
+  .banner { border-radius: 8px; padding: 8px 12px; font-size: 13px; margin: 0 0 10px; display: none; }
+  .banner.show { display: block; }
+  .banner.off { background: var(--bg); border: 1px dashed var(--off); color: var(--muted); }
+  .banner.todo { background: var(--accent-soft); color: var(--ink); }
+  .mons { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+  .mons li { display: flex; gap: 8px; align-items: baseline; font-variant-numeric: tabular-nums; }
+  .mons li b { font-weight: 600; }
+  .mons li span { color: var(--muted); font-size: 12.5px; }
   .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
   table.hk { width: 100%; border-collapse: collapse; }
   table.hk td { padding: 6px 4px; border-top: 1px solid var(--line); vertical-align: middle; }
@@ -66,40 +82,53 @@
   .mods input { display: none; }
   .mods label:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
   .hkkey { width: 150px !important; display: inline-block; margin-left: 6px; }
-  .hkshow { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: var(--muted); margin-left: 8px; }
   .dup { color: var(--warn); font-size: 12px; margin-left: 6px; }
   pre#out { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;
             max-height: 420px; overflow: auto; font: 12.5px/1.5 ui-monospace, Consolas, monospace; white-space: pre; }
   .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg);
-           padding: 9px 16px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+           padding: 9px 16px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; z-index: 20; }
   .toast.show { opacity: .95; }
   .drop { outline: 3px dashed var(--accent); outline-offset: -8px; }
+  .device-only, .file-only { display: none !important; }
+  body.device .device-only, body.file .file-only { display: revert !important; }
+  /* measurement mode */
+  #measure { position: fixed; inset: 0; z-index: 30; background: var(--bg); display: none; cursor: crosshair;
+             align-items: center; justify-content: center; text-align: center; }
+  body.measuring #measure { display: flex; }
+  #measure h1 { font-size: 26px; margin: 0 0 8px; }
+  #measure p { color: var(--muted); margin: 4px 0; font-size: 15px; }
+  #measure .bar { width: 320px; height: 6px; background: var(--line); border-radius: 6px; margin: 18px auto 0; overflow: hidden; }
+  #measure .bar div { height: 100%; width: 0; background: var(--accent); transition: width .2s; }
   @media (max-width: 900px) { main, .pcs { grid-template-columns: 1fr; } }
 </style>
 </head>
-<body>
+<body class="file">
 <header>
   <h1>kmswitch settings</h1>
-  <div class="status" id="status">No file opened: showing the defaults. Open <b>KMSWITCH.TXT</b> from the kmswitch drive.</div>
-  <button id="btnOpen">Open KMSWITCH.TXT</button>
+  <div class="status" id="status"></div>
+  <span class="device-only"><span class="pill" id="pill-pc1"><i></i><span>PC 1</span></span></span>
+  <span class="device-only"><span class="pill" id="pill-pc2"><i></i><span>PC 2</span></span></span>
+  <button id="btnOpen" class="file-only">Open KMSWITCH.TXT</button>
   <button id="btnDefaults" title="Put every setting back to its default">Defaults</button>
-  <button id="btnSave" class="primary">Save</button>
+  <button id="btnSave" class="primary file-only">Save</button>
   <input type="file" id="filePick" accept=".txt,text/plain" hidden>
 </header>
 
 <main>
   <section class="card wide">
     <h2>Screens</h2>
-    <p class="hint">Where PC 2 is, seen from PC 1. The shapes follow each PC's aspect ratio; the offset moves the screens against each other. Push the pointer through the shared edge to switch.</p>
-    <div class="row" style="grid-template-columns:150px auto 1fr">
+    <p class="hint">Where PC 2 is, seen from PC 1. Each PC is drawn with its own monitors as measured (or with the
+      chosen shape until it is measured). The blue line is where the pointer crosses over.</p>
+    <div class="row" style="grid-template-columns:150px auto 1fr auto">
       <label class="k">PC 2 is</label>
       <div class="seg" id="layoutSeg">
         <button data-v="left">left</button><button data-v="right">right</button>
         <button data-v="above">above</button><button data-v="below">below</button>
       </div>
       <span></span>
+      <button id="btnMeasure" class="device-only" title="The box switches to each PC for a few seconds and measures its monitors">Measure screens</button>
     </div>
-    <svg id="screens" viewBox="0 0 1000 280" aria-label="Screen arrangement"></svg>
+    <svg id="screens" viewBox="0 0 1000 300" aria-label="Screen arrangement"></svg>
   </section>
 
   <div class="pcs wide" id="pcs"></div>
@@ -115,8 +144,12 @@
       <label class="switch"><input type="checkbox" data-k="general.edge_corner_block"><span>no switch in screen corners</span></label></div>
     <div class="row"><label class="k">After power-up</label>
       <select data-k="general.start_on"><option value="pc1">start on PC 1</option><option value="pc2">start on PC 2</option><option value="last">last used PC</option></select></div>
-    <div class="row"><label class="k">Editor hotkey</label>
-      <label class="switch"><input type="checkbox" data-k="general.config_ui"><span>let the box open this page</span></label></div>
+    <div class="row"><label class="k">Settings page</label>
+      <label class="switch"><input type="checkbox" data-k="general.usb_network"><span>serve this page at 192.168.7.1</span></label></div>
+    <div class="row"><label class="k">Auto measure</label>
+      <label class="switch"><input type="checkbox" data-k="general.auto_measure"><span>measure a newly connected PC</span></label></div>
+    <div class="row"><label class="k">Typing</label>
+      <label class="switch"><input type="checkbox" data-k="general.config_ui"><span>let hotkeys open pages on the PC</span></label></div>
   </section>
 
   <section class="card">
@@ -127,22 +160,31 @@
 
   <section class="card wide">
     <h2>KMSWITCH.TXT</h2>
-    <p class="hint">This is exactly what Save writes. Settings this page does not know are kept at the end.</p>
+    <p class="hint"><span class="device-only">The box keeps this file on the microSD card and updates it as you change things here.</span>
+      <span class="file-only">This is exactly what Save writes.</span> Settings this page does not know are kept at the end.</p>
     <pre id="out"></pre>
     <div style="margin-top:10px;display:flex;gap:8px"><button id="btnCopy">Copy text</button></div>
   </section>
 </main>
+
+<div id="measure"><div>
+  <h1>kmswitch is measuring this PC's screens</h1>
+  <p>Please don't touch the mouse or keyboard for a few seconds.</p>
+  <p id="mstate">Starting…</p>
+  <div class="bar"><div id="mbar"></div></div>
+</div></div>
 <div class="toast" id="toast"></div>
 
 <script>
 'use strict';
 // ------------------------------------------------------------------ model
 const DEFAULTS = {
-  general: { layout: 'right', edge_switch: true, edge_delay_ms: 0, edge_corner_block: true, start_on: 'pc1', config_ui: true },
+  general: { layout: 'right', edge_switch: true, edge_delay_ms: 0, edge_corner_block: true, start_on: 'pc1',
+             usb_network: true, auto_measure: true, config_ui: true },
   hotkeys: { switch: 'WIN+F12', relative_mode: 'WIN+F11', speed_up: 'WIN+SHIFT+UP', speed_down: 'WIN+SHIFT+DOWN',
-             speed_reset: 'WIN+SHIFT+HOME', open_config: 'WIN+F10' },
-  pc1: { name: 'PC 1', aspect: '16:9', speed_x: 1.0, speed_y: 1.0, accel: 'medium', y_offset: 0, x_offset: 0, os: 'windows', kbd_layout: 'us' },
-  pc2: { name: 'PC 2', aspect: '16:9', speed_x: 1.0, speed_y: 1.0, accel: 'medium', y_offset: 0, x_offset: 0, os: 'windows', kbd_layout: 'us' },
+             speed_reset: 'WIN+SHIFT+HOME', open_config: 'WIN+F10', measure: 'WIN+F9' },
+  pc1: { name: 'PC 1', speed_x: 1.0, speed_y: 1.0, accel: 'medium', y_offset: 0, x_offset: 0, os: 'windows', kbd_layout: 'us', monitors: '', aspect: '16:9' },
+  pc2: { name: 'PC 2', speed_x: 1.0, speed_y: 1.0, accel: 'medium', y_offset: 0, x_offset: 0, os: 'windows', kbd_layout: 'us', monitors: '', aspect: '16:9' },
 };
 const HOTKEYS = [
   ['switch', 'Switch PC', 'to the other PC'],
@@ -151,6 +193,7 @@ const HOTKEYS = [
   ['speed_down', 'Slower', 'active PC, / 1.1'],
   ['speed_reset', 'Reset speed', 'active PC, back to 1.0'],
   ['open_config', 'Open this page', 'on the active PC'],
+  ['measure', 'Measure screens', 'both PCs, LEDs blink'],
 ];
 const MODS = ['CTRL', 'ALT', 'WIN', 'SHIFT', 'RCTRL', 'RALT', 'RWIN', 'RSHIFT'];   // canonical order
 const KEYS = [].concat(
@@ -163,16 +206,50 @@ const KEYS = [].concat(
 const ASPECTS = ['16:9', '16:10', '21:9', '32:9', '4:3', '5:4', '9:16'];
 const LAYOUTS = { us: 'English (US)', de: 'German', at: 'German (Austria)', ch: 'Swiss German', fr: 'French',
                   uk: 'English (UK)', it: 'Italian', es: 'Spanish' };
-const RANGES = { 'general.edge_delay_ms': [0, 1000], speed_x: [0.25, 4], speed_y: [0.25, 4], y_offset: [-50, 50], x_offset: [-50, 50] };
+const DEVICE = /^https?:$/.test(location.protocol) && !/claude|localhost:0/.test(location.host) && location.hostname !== '';
+const MEASURE = DEVICE && (location.pathname.replace(/\/+$/, '').endsWith('/measure') || location.hash === '#measure');
 
 let S = clone(DEFAULTS);
 let extras = {};          // section -> [[key, value]] not known to this page
 let fileHandle = null;
 let fileName = null;
 let dirty = false;
+let status = null;        // device mode: last /api/status
+let saveTimer = null, saving = false;
 
 function clone(o) { return JSON.parse(JSON.stringify(o)); }
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+// ------------------------------------------------------------------ monitors and shapes
+function parseMonitors(str) {
+  const out = [];
+  String(str || '').split(',').forEach(part => {
+    const m = part.trim().match(/^(\d+)x(\d+)([+-]\d+)([+-]\d+)(?:@([\d.]+))?$/i);
+    if (m) out.push({ w: +m[1], h: +m[2], x: +m[3], y: +m[4], scale: m[5] ? +m[5] : 1 });
+  });
+  return out;
+}
+function fmtMonitors(list) {
+  const sg = v => (v < 0 ? '-' : '+') + Math.abs(Math.round(v));
+  return list.map(m => `${Math.round(m.w)}x${Math.round(m.h)}${sg(m.x)}${sg(m.y)}@${+(+m.scale).toFixed(2)}`).join(', ');
+}
+function shapeName(w, h) {
+  const r = w / h;
+  const named = [['16:9', 16 / 9], ['16:10', 1.6], ['21:9', 64 / 27], ['21:9', 43 / 18], ['32:9', 32 / 9], ['4:3', 4 / 3],
+                 ['5:4', 1.25], ['3:2', 1.5], ['9:16', 9 / 16], ['10:16', 0.625], ['1:1', 1]];
+  for (const [n, v] of named) if (Math.abs(r - v) / v < 0.015) return n;
+  const g = (a, b) => b ? g(b, a % b) : a, d = g(w, h);
+  return (w / d) + ':' + (h / d);
+}
+function aspectRatio(a) { const [w, h] = String(a).split(':').map(Number); return w / h; }
+function validAspect(v) { return /^\d{1,2}:\d{1,2}$/.test(String(v).trim()) && !String(v).trim().split(':').some(n => +n === 0); }
+// monitors of a PC for drawing: measured ones, or one screen from `aspect`
+function monitorsOf(pc) {
+  const m = parseMonitors(S[pc].monitors);
+  if (m.length) return { list: m, measured: true };
+  const r = aspectRatio(S[pc].aspect) || 16 / 9;
+  return { list: [{ w: 1920 * Math.max(1, r / (16 / 9)), h: 1920 * Math.max(1, r / (16 / 9)) / r, x: 0, y: 0, scale: 1 }], measured: false };
+}
 
 // ------------------------------------------------------------------ parse / write
 function parseBool(v) {
@@ -187,11 +264,8 @@ function normHotkey(v) {
   const parts = s.split('+').filter(Boolean);
   const key = parts.pop();
   if (!KEYS.includes(key) || parts.some(p => !MODS.includes(p))) return null;
-  const mods = MODS.filter(m => parts.includes(m));
-  return mods.concat(key).join('+');
+  return MODS.filter(m => parts.includes(m)).concat(key).join('+');
 }
-function validAspect(v) { return /^\d{1,2}:\d{1,2}$/.test(String(v).trim()) && !String(v).trim().split(':').some(n => +n === 0); }
-
 function parse(text) {
   const s = clone(DEFAULTS), ex = {}, problems = [];
   let sec = null;
@@ -211,10 +285,11 @@ function parse(text) {
     else if (typeof def === 'number') { val = parseFloat(v); if (isNaN(val)) val = null; }
     else if (sec === 'hotkeys') val = normHotkey(v);
     else val = v;
-    if (val === null || val === '') { problems.push(sec + '.' + k); return; }
+    if (val === null || (val === '' && k !== 'monitors')) { problems.push(sec + '.' + k); return; }
     if (k === 'aspect' && !validAspect(val)) { problems.push(sec + '.' + k); return; }
+    if (k === 'monitors' && val && !parseMonitors(val).length) { problems.push(sec + '.' + k); return; }
     if (k === 'layout' && !['left', 'right', 'above', 'below'].includes(val.toLowerCase())) { problems.push(sec + '.' + k); return; }
-    s[sec][k] = typeof val === 'string' && k !== 'name' && sec !== 'hotkeys' ? val.toLowerCase() : val;
+    s[sec][k] = typeof val === 'string' && !['name', 'monitors'].includes(k) && sec !== 'hotkeys' ? val.toLowerCase() : val;
   });
   sanitize(s);
   return { s, ex, problems };
@@ -227,6 +302,7 @@ function sanitize(s) {
     if (!['off', 'low', 'medium', 'high'].includes(s[pc].accel)) s[pc].accel = 'medium';
     if (!['windows', 'mac', 'linux'].includes(s[pc].os)) s[pc].os = 'windows';
     if (!(s[pc].kbd_layout in LAYOUTS)) s[pc].kbd_layout = 'us';
+    if (s[pc].monitors) s[pc].monitors = fmtMonitors(parseMonitors(s[pc].monitors));
   }
 }
 const COMMENTS = {
@@ -235,41 +311,42 @@ const COMMENTS = {
   'general.edge_delay_ms': '0-1000: stay at the edge this long before switching',
   'general.edge_corner_block': 'no switch while the pointer is in a screen corner',
   'general.start_on': 'pc1 | pc2 | last',
-  'general.config_ui': 'allow the open_config hotkey',
+  'general.usb_network': 'settings page at http://192.168.7.1 on both PCs',
+  'general.auto_measure': 'measure a newly connected PC by itself',
+  'general.config_ui': 'allow the open_config and measure hotkeys to type into the PC',
   'hotkeys.relative_mode': 'relative mouse for games; pauses edge switching',
-  'pc.aspect': 'shape of the whole desktop: 16:9 16:10 21:9 32:9 4:3 5:4 9:16 or W:H',
+  'hotkeys.measure': 'measure the screens of both PCs (LEDs blink)',
   'pc.speed_x': '0.25-4.0', 'pc.speed_y': '0.25-4.0', 'pc.accel': 'off | low | medium | high',
   'pc.y_offset': '-50..50 % of screen height (layout right / left)',
   'pc.x_offset': '-50..50 % of screen width (layout above / below)',
-  'pc.os': 'windows | mac | linux (for open_config only)',
-  'pc.kbd_layout': 'us de at ch fr uk it es (for open_config only)',
+  'pc.os': 'windows | mac | linux (for typed commands)',
+  'pc.kbd_layout': 'us de at ch fr uk it es (for typed commands)',
+  'pc.monitors': 'written by the box when it measures: WxH+X+Y@scale, ...',
+  'pc.aspect': 'used only while monitors is empty: 16:9 16:10 21:9 32:9 4:3 5:4 9:16 or W:H',
 };
-function fmt(v) {
+function fmt(k, v) {
   if (typeof v === 'boolean') return v ? 'on' : 'off';
-  if (typeof v === 'number' && !Number.isInteger(v)) return String(v);
-  if (typeof v === 'number') return String(v) + (v === Math.trunc(v) && String(v).indexOf('.') < 0 ? '' : '');
+  if ((k === 'speed_x' || k === 'speed_y') && Number.isInteger(v)) return v.toFixed(1);
   return String(v);
 }
 function write(s) {
   const out = ['# kmswitch settings. Every line is optional: a missing or wrong value uses the default.',
-               '# Full description: docs/configuration.md.  Visual editor: KMSWITCH.HTM on this drive.'];
+               '# Full description: docs/configuration.md.  Settings page: http://192.168.7.1 or KMSWITCH.HTM on this drive.'];
   for (const sec of ['general', 'hotkeys', 'pc1', 'pc2']) {
-    out.push('', '[' + sec + ']' + (sec === 'hotkeys' ? '                 # modifiers CTRL SHIFT ALT WIN (+ RCTRL RSHIFT RALT RWIN) + one key, or none' : ''));
+    out.push('', '[' + sec + ']' + (sec === 'hotkeys' ? '                 # modifiers CTRL ALT WIN SHIFT (+ RCTRL RALT RWIN RSHIFT) + one key, or none' : ''));
     for (const [k, v] of Object.entries(s[sec])) {
-      let val = fmt(v);
-      if ((k === 'speed_x' || k === 'speed_y') && Number.isInteger(v)) val = v.toFixed(1);
-      const key = (k + ' = ' + val);
-      const c = COMMENTS[sec + '.' + k] || COMMENTS['pc.' + k];
-      out.push(c && !(sec.startsWith('pc') && k === 'name') && !(sec === 'pc2') ? key.padEnd(25) + ' # ' + c : key);
+      const key = k + ' = ' + fmt(k, v);
+      const c = sec === 'pc2' || k === 'name' ? null : (COMMENTS[sec + '.' + k] || COMMENTS['pc.' + k]);
+      out.push(c ? key.padEnd(25) + ' # ' + c : key);
     }
     if (extras[sec] && extras[sec].length) {
-      out.push('# kept from your file (not used by this editor):');
+      out.push('# kept from your file (not used by this page):');
       extras[sec].forEach(([k, v]) => out.push(k + ' = ' + v));
     }
   }
   for (const sec of Object.keys(extras)) {
     if (DEFAULTS[sec]) continue;
-    out.push('', '[' + sec + ']', '# kept from your file (not used by this editor):');
+    out.push('', '[' + sec + ']', '# kept from your file (not used by this page):');
     extras[sec].forEach(([k, v]) => out.push(k + ' = ' + v));
   }
   return out.join('\n') + '\n';
@@ -283,12 +360,21 @@ function pcCard(pc, color) {
   const asp = ASPECTS.map(a => `<option value="${a}">${a}${a === '9:16' ? ' (portrait)' : ''}</option>`).join('') + '<option value="custom">other…</option>';
   const lay = Object.entries(LAYOUTS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
   return `<section class="card pc" data-pc="${pc}">
-    <h2><span class="dot" style="background:${color}"></span><span data-title="${pc}"></span></h2>
-    <p class="hint">${pc === 'pc1' ? 'The PC on the left-hand USB-C (MCU-A side).' : 'The PC on the right-hand USB-C (MCU-B side).'}</p>
+    <h2><span class="dot" style="background:${color}"></span><span data-title="${pc}"></span>
+      <span class="pill device-only" data-conn="${pc}"><i></i><span></span></span></h2>
+    <p class="hint">${pc === 'pc1' ? 'Connected to the PC 1 port (MCU-A side).' : 'Connected to the PC 2 port (MCU-B side).'}</p>
+    <div class="banner off" data-offbanner="${pc}">Not connected. Plug in this PC's USB cable; its settings are kept and become editable as soon as it is connected.</div>
+    <fieldset data-fs="${pc}">
     <div class="row"><label class="k">Name</label><input type="text" maxlength="24" data-k="${pc}.name"></div>
-    <div class="row"><label class="k">Screen shape</label>
-      <div style="display:flex;gap:8px"><select data-aspect="${pc}">${asp}</select>
-      <input type="text" data-k="${pc}.aspect" style="width:90px;display:none" placeholder="W:H"></div></div>
+    <div class="row" style="align-items:start"><label class="k" style="padding-top:2px">Screens</label>
+      <div>
+        <ul class="mons" data-mons="${pc}"></ul>
+        <div data-noshape="${pc}" style="display:flex;gap:8px;align-items:center">
+          <select data-aspect="${pc}" style="max-width:160px">${asp}</select>
+          <input type="text" data-k="${pc}.aspect" style="width:80px;display:none" placeholder="W:H">
+          <span class="hint" style="margin:0" data-shapehint="${pc}"></span>
+        </div>
+      </div></div>
     <div class="row"><label class="k">Speed</label>
       <label class="switch"><input type="checkbox" data-link="${pc}" checked><span>same horizontal and vertical</span></label></div>
     <div class="row"><label class="k">Horizontal</label>
@@ -302,7 +388,8 @@ function pcCard(pc, color) {
     <div class="row"><label class="k">Operating system</label>
       <select data-k="${pc}.os"><option value="windows">Windows</option><option value="mac">macOS</option><option value="linux">Linux</option></select></div>
     <div class="row"><label class="k">Keyboard layout</label><select data-k="${pc}.kbd_layout">${lay}</select></div>
-    <p class="hint" style="margin:6px 0 0">OS and keyboard layout are only used when the box opens this page with its hotkey.</p>
+    <p class="hint" style="margin:6px 0 0">OS and keyboard layout are used when the box types a command on this PC (Win+F10, Win+F9).</p>
+    </fieldset>
   </section>`;
 }
 
@@ -317,7 +404,6 @@ function buildHotkeys() {
 function build() {
   $('#pcs').innerHTML = pcCard('pc1', 'var(--pc1)') + pcCard('pc2', 'var(--pc2)');
   buildHotkeys();
-  // generic inputs
   $$('[data-k]').forEach(el => {
     const ev = el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input';
     el.addEventListener(ev, () => {
@@ -360,6 +446,7 @@ function build() {
   });
 }
 function vertical() { return S.general.layout === 'left' || S.general.layout === 'right'; }
+function connected(pc) { return !DEVICE || !status || !!(status.pcs && status.pcs[pc] && status.pcs[pc].connected); }
 
 // ------------------------------------------------------------------ render
 function render() {
@@ -374,11 +461,26 @@ function render() {
     o.textContent = k === 'edge_delay_ms' ? v + ' ms' : (+v).toFixed(2) + '×';
   });
   $$('[data-title]').forEach(t => t.textContent = S[t.dataset.title].name || t.dataset.title.toUpperCase());
-  $$('[data-aspect]').forEach(el => {
-    const a = S[el.dataset.aspect].aspect;
-    if (ASPECTS.includes(a)) { el.value = a; $(`[data-k="${el.dataset.aspect}.aspect"]`).style.display = 'none'; }
-    else { el.value = 'custom'; $(`[data-k="${el.dataset.aspect}.aspect"]`).style.display = ''; }
-  });
+  for (const pc of ['pc1', 'pc2']) {
+    const mon = parseMonitors(S[pc].monitors);
+    $(`[data-mons="${pc}"]`).innerHTML = mon.map((m, i) =>
+      `<li><b>${mon.length > 1 ? 'Monitor ' + (i + 1) + ': ' : ''}${m.w} × ${m.h}</b> <span>${shapeName(m.w, m.h)}${m.scale !== 1 ? ' · ' + Math.round(m.scale * 100) + ' %' : ''}</span></li>`).join('');
+    $(`[data-noshape="${pc}"]`).style.display = mon.length ? 'none' : 'flex';
+    $(`[data-shapehint="${pc}"]`).textContent = DEVICE ? 'not measured yet: shape used until then' : 'shape of the whole desktop';
+    const a = S[pc].aspect, sel = $(`[data-aspect="${pc}"]`), txt = $(`[data-k="${pc}.aspect"]`);
+    if (ASPECTS.includes(a)) { sel.value = a; txt.style.display = 'none'; } else { sel.value = 'custom'; txt.style.display = ''; }
+    const on = connected(pc);
+    $(`[data-fs="${pc}"]`).disabled = !on;
+    $(`[data-offbanner="${pc}"]`).classList.toggle('show', !on);
+    const pill = $(`[data-conn="${pc}"]`);
+    pill.classList.toggle('on', on);
+    pill.classList.toggle('active', !!status && status.active === pc);
+    $('span', pill).textContent = !status ? '' : !on ? 'not connected' :
+      (status.active === pc ? 'active' : 'connected') + (status.you === pc ? ' · this PC' : '');
+    const hp = $('#pill-' + pc);
+    hp.classList.toggle('on', on); hp.classList.toggle('active', !!status && status.active === pc);
+    $('span', hp).textContent = (S[pc].name || pc) + (status && status.you === pc ? ' (this PC)' : '');
+  }
   $$('[data-seg]').forEach(seg => {
     const [sec, k] = seg.dataset.seg.split('.');
     $$('button', seg).forEach(b => b.classList.toggle('on', b.dataset.v === S[sec][k]));
@@ -400,70 +502,242 @@ function render() {
     $$('input', tr).forEach(i => { i.checked = parts.includes(i.value); i.disabled = key === 'none'; });
     $('.dup', tr).textContent = v !== 'none' && used[v].length > 1 ? 'used twice' : '';
   });
+  const busy = status && status.measuring && !['done', 'failed'].includes(status.measuring.state);
+  const mb = $('#btnMeasure');
+  mb.disabled = !!busy || !status || !['pc1', 'pc2'].some(connected);
+  mb.textContent = busy ? 'Measuring ' + (S[status.measuring.pc].name || status.measuring.pc) + '…' : 'Measure screens';
   drawScreens();
   $('#out').textContent = write(S);
 }
 
-function aspectRatio(a) { const [w, h] = a.split(':').map(Number); return w / h; }
 function drawScreens() {
-  const svg = $('#screens'), W = 1000, H = 280, pad = 18;
-  const r1 = aspectRatio(S.pc1.aspect), r2 = aspectRatio(S.pc2.aspect);
-  const lay = S.general.layout;
-  // both screens get the same height (left/right) or width (above/below); offsets move PC 2 against PC 1
-  let a, b;
-  if (lay === 'left' || lay === 'right') {
-    let h = H - 2 * pad - 40;
-    let w1 = h * r1, w2 = h * r2;
-    const k = Math.min(1, (W - 2 * pad - 40) / (w1 + w2)); h *= k; w1 *= k; w2 *= k;
-    const off = (S.pc2.y_offset - S.pc1.y_offset) / 100 * h;
-    const x0 = (W - w1 - w2) / 2, y0 = (H - h) / 2;
-    const first = lay === 'right' ? ['pc1', w1, 0] : ['pc2', w2, off];
-    const second = lay === 'right' ? ['pc2', w2, off] : ['pc1', w1, 0];
-    a = { pc: first[0], x: x0, y: y0 + first[2], w: first[1], h };
-    b = { pc: second[0], x: x0 + first[1], y: y0 + second[2], w: second[1], h };
+  const svg = $('#screens'), W = 1000, H = 300, pad = 16, gap = 0;
+  const lay = S.general.layout, horiz = lay === 'left' || lay === 'right';
+  const box = pc => {
+    const { list, measured } = monitorsOf(pc);
+    const x0 = Math.min(...list.map(m => m.x)), y0 = Math.min(...list.map(m => m.y));
+    const x1 = Math.max(...list.map(m => m.x + m.w)), y1 = Math.max(...list.map(m => m.y + m.h));
+    return { pc, list, measured, x0, y0, w: x1 - x0, h: y1 - y0 };
+  };
+  const p1 = box('pc1'), p2 = box('pc2');
+  const first = (lay === 'right' || lay === 'below') ? p1 : p2, second = first === p1 ? p2 : p1;
+  // each PC is scaled to the same height (side by side) or width (stacked), like the box treats a crossing
+  const L = horiz ? H - 2 * pad - 30 : W;   // common height or width in px
+  const sc = b => horiz ? L / b.h : 230 / b.w;
+  let k = 1;
+  if (horiz) { const tw = first.w * sc(first) + second.w * sc(second) + gap; k = Math.min(1, (W - 2 * pad) / tw); }
+  else { const th = first.h * sc(first) + second.h * sc(second) + gap; k = Math.min(1, (H - 2 * pad - 20) / th); }
+  const off = (b) => (horiz ? S[b.pc].y_offset : S[b.pc].x_offset) / 100;
+  const place = [];
+  if (horiz) {
+    const w1 = first.w * sc(first) * k, w2 = second.w * sc(second) * k, h = L * k;
+    const x = (W - w1 - w2 - gap) / 2, y = (H - 20 - h) / 2;
+    place.push({ b: first, X: x, Y: y + off(first) * h, s: sc(first) * k });
+    place.push({ b: second, X: x + w1 + gap, Y: y + off(second) * h, s: sc(second) * k });
   } else {
-    let w = 220;
-    let h1 = w / r1, h2 = w / r2;
-    const k = Math.min(1, (H - 2 * pad - 20) / (h1 + h2)); w *= k; h1 *= k; h2 *= k;
-    const off = (S.pc2.x_offset - S.pc1.x_offset) / 100 * w;
-    const x0 = (W - w) / 2, y0 = (H - h1 - h2) / 2;
-    const top = lay === 'above' ? ['pc2', h2, off] : ['pc1', h1, 0];
-    const bot = lay === 'above' ? ['pc1', h1, 0] : ['pc2', h2, off];
-    a = { pc: top[0], x: x0 + top[2], y: y0, w, h: top[1] };
-    b = { pc: bot[0], x: x0 + bot[2], y: y0 + top[1], w, h: bot[1] };
+    const h1 = first.h * sc(first) * k, h2 = second.h * sc(second) * k, w = 230 * k;
+    const x = (W - w) / 2, y = (H - 20 - h1 - h2 - gap) / 2;
+    place.push({ b: first, X: x + off(first) * w, Y: y, s: sc(first) * k });
+    place.push({ b: second, X: x + off(second) * w, Y: y + h1 + gap, s: sc(second) * k });
   }
   const col = pc => pc === 'pc1' ? 'var(--pc1)' : 'var(--pc2)';
-  const scr = s => `<g>
-      <rect x="${s.x + 3}" y="${s.y + 3}" width="${s.w - 6}" height="${s.h - 6}" rx="6" fill="${col(s.pc)}" fill-opacity="0.12" stroke="${col(s.pc)}" stroke-width="3"/>
-      <text x="${s.x + s.w / 2}" y="${s.y + s.h / 2 - 4}" text-anchor="middle" font-size="18" font-weight="600" fill="${col(s.pc)}">${esc(S[s.pc].name || s.pc)}</text>
-      <text x="${s.x + s.w / 2}" y="${s.y + s.h / 2 + 18}" text-anchor="middle" font-size="13" fill="var(--muted)">${S[s.pc].aspect} · speed ${(+S[s.pc].speed_x).toFixed(2)}×</text>
-    </g>`;
-  // shared edge highlight
-  let edge = '';
-  if (S.general.edge_switch) {
-    if (lay === 'left' || lay === 'right') {
-      const y1 = Math.max(a.y, b.y) + 3, y2 = Math.min(a.y + a.h, b.y + b.h) - 3;
-      if (y2 > y1) edge = `<line x1="${b.x}" y1="${y1}" x2="${b.x}" y2="${y2}" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>`;
+  let g = '';
+  for (const { b, X, Y, s } of place) {
+    const on = connected(b.pc), c = on ? col(b.pc) : 'var(--off)';
+    b.list.forEach((m, i) => {
+      const x = X + (m.x - b.x0) * s, y = Y + (m.y - b.y0) * s, w = m.w * s, h = m.h * s;
+      g += `<rect x="${x + 2}" y="${y + 2}" width="${Math.max(0, w - 4)}" height="${Math.max(0, h - 4)}" rx="5"
+              fill="${c}" fill-opacity="${on ? 0.12 : 0.06}" stroke="${c}" stroke-width="2.5" ${b.measured && on ? '' : 'stroke-dasharray="7 5"'}/>`;
+      if (b.list.length > 1 && w > 70 && h > 34) g += `<text x="${x + w / 2}" y="${y + h - 10}" text-anchor="middle" font-size="12" fill="var(--muted)">${m.w}×${m.h}</text>`;
+    });
+    const cx = X + b.w * s / 2, cy = Y + b.h * s / 2;
+    const sub = !on ? 'not connected' : b.measured ? (b.list.length > 1 ? b.list.length + ' monitors' : `${b.list[0].w}×${b.list[0].h} · ${shapeName(b.list[0].w, b.list[0].h)}`)
+                    : `${S[b.pc].aspect} · not measured`;
+    g += `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-size="17" font-weight="600" fill="${c}">${esc(S[b.pc].name || b.pc)}</text>
+          <text x="${cx}" y="${cy + 16}" text-anchor="middle" font-size="12.5" fill="var(--muted)">${sub} · speed ${(+S[b.pc].speed_x).toFixed(2)}×</text>`;
+  }
+  // shared edge
+  const [A, B] = place;
+  if (S.general.edge_switch && connected('pc1') && connected('pc2')) {
+    if (horiz) {
+      const y1 = Math.max(A.Y, B.Y) + 3, y2 = Math.min(A.Y + A.b.h * A.s, B.Y + B.b.h * B.s) - 3;
+      if (y2 > y1) g += `<line x1="${B.X}" y1="${y1}" x2="${B.X}" y2="${y2}" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>`;
     } else {
-      const x1 = Math.max(a.x, b.x) + 3, x2 = Math.min(a.x + a.w, b.x + b.w) - 3;
-      if (x2 > x1) edge = `<line x1="${x1}" y1="${b.y}" x2="${x2}" y2="${b.y}" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>`;
+      const x1 = Math.max(A.X, B.X) + 3, x2 = Math.min(A.X + A.b.w * A.s, B.X + B.b.w * B.s) - 3;
+      if (x2 > x1) g += `<line x1="${x1}" y1="${B.Y}" x2="${x2}" y2="${B.Y}" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>`;
     }
   }
-  svg.innerHTML = scr(a) + scr(b) + edge +
-    `<text x="${W - pad}" y="${H - 6}" text-anchor="end" font-size="12" fill="var(--muted)">${S.general.edge_switch ? 'blue line: the pointer switches PC here' : 'edge switching is off: use the hotkey'}</text>`;
+  const note = !S.general.edge_switch ? 'edge switching is off: use the hotkey' :
+    !(connected('pc1') && connected('pc2')) ? 'one PC is not connected' : 'blue line: the pointer switches PC here';
+  svg.innerHTML = g + `<text x="${W - pad}" y="${H - 6}" text-anchor="end" font-size="12" fill="var(--muted)">${note}${
+    place.some(p => !p.b.measured) ? ' · dashed: not measured yet' : ''}</text>`;
 }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c])); }
 
-function changed() { sanitize(S); dirty = true; render(); setStatus(); }
+function changed() {
+  sanitize(S); dirty = true; render();
+  if (DEVICE) scheduleSave();
+  setStatus();
+}
 function setStatus(msg) {
   const st = $('#status');
   if (msg) { st.innerHTML = msg; return; }
+  if (DEVICE) {
+    st.innerHTML = !status ? 'Connecting to the box…' :
+      saving || saveTimer ? 'Saving…' : dirty ? '<span style="color:var(--warn)">Not saved: the box did not answer</span>' :
+      '<span style="color:var(--ok)">✓ Saved on the box</span>';
+    return;
+  }
   const where = fileName ? `<b>${esc(fileName)}</b>` : 'defaults';
   st.innerHTML = `Editing ${where}${dirty ? ' · <span style="color:var(--warn)">not saved</span>' : ''}`;
 }
-function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2200); }
+let toastT = null;
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove('show'), 2600); }
 
-// ------------------------------------------------------------------ files
+// ------------------------------------------------------------------ device mode
+async function api(method, path, body, type = 'application/json') {
+  const r = await fetch(path, { method, cache: 'no-store',
+    headers: body === undefined ? {} : { 'Content-Type': type },
+    body: body === undefined ? undefined : (type === 'application/json' ? JSON.stringify(body) : body) });
+  if (!r.ok) throw new Error(method + ' ' + path + ': ' + r.status);
+  const ct = r.headers.get('content-type') || '';
+  return ct.includes('json') ? r.json() : r.text();
+}
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    saveTimer = null; saving = true; setStatus();
+    try {
+      const r = await api('PUT', '/api/config', write(S), 'text/plain');
+      dirty = false;
+      if (r && r.problems && r.problems.length) toast('The box used the default for: ' + r.problems.join(', '));
+    } catch (e) { /* stays dirty, retried on the next change or status poll */ }
+    saving = false; setStatus();
+  }, 900);
+}
+async function poll() {
+  try {
+    const st = await api('GET', '/api/status');
+    const was = status;
+    status = st;
+    let monChanged = false;
+    for (const pc of ['pc1', 'pc2']) {
+      const m = (st.pcs && st.pcs[pc] && st.pcs[pc].monitors) || '';
+      if (m !== S[pc].monitors) { S[pc].monitors = m ? fmtMonitors(parseMonitors(m)) : ''; monChanged = true; }
+      if (was && was.pcs[pc].connected !== st.pcs[pc].connected)
+        toast((S[pc].name || pc) + (st.pcs[pc].connected ? ' connected' : ' disconnected'));
+    }
+    if (was && was.measuring && !st.measuring) toast('Measurement finished');
+    if (dirty && !saveTimer && !saving) scheduleSave();
+    render(); setStatus();
+    void monChanged;
+  } catch (e) {
+    status = null; setStatus('<span style="color:var(--warn)">The box does not answer. Is it plugged in?</span>');
+  }
+  setTimeout(poll, 1000);
+}
+async function startDevice() {
+  document.body.classList.replace('file', 'device');
+  setStatus();
+  try {
+    const text = await api('GET', '/api/config');
+    const r = parse(typeof text === 'string' ? text : String(text));
+    S = r.s; extras = r.ex; dirty = false;
+    $$('[data-link]').forEach(el => el.checked = S[el.dataset.link].speed_x === S[el.dataset.link].speed_y);
+  } catch (e) { toast('Could not read the settings from the box'); }
+  render();
+  poll();
+}
+$('#btnMeasure').addEventListener('click', async () => {
+  const pcs = ['pc1', 'pc2'].filter(connected);
+  try { await api('POST', '/api/measure', { pcs }); toast('The box now switches to each PC for a few seconds. LEDs blink while it measures.'); }
+  catch (e) { toast('The box did not start the measurement'); }
+});
+
+// ------------------------------------------------------------------ measurement mode
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+let lastMove = null;
+function waitMove(ms) {
+  return new Promise(res => {
+    const t0 = performance.now();
+    const h = e => { cleanup(); res({ x: e.screenX, y: e.screenY }); };
+    const to = setTimeout(() => { cleanup(); res(null); }, ms);
+    function cleanup() { clearTimeout(to); window.removeEventListener('pointermove', h, true); }
+    window.addEventListener('pointermove', h, true);
+    void t0;
+  });
+}
+async function moveTo(x, y) {
+  const p = waitMove(400);
+  await api('POST', '/api/m/move', { x: Math.round(clamp(x, 0, 32767)), y: Math.round(clamp(y, 0, 32767)) });
+  return p;
+}
+function scr() { return { w: screen.width, h: screen.height, availLeft: screen.availLeft || 0, availTop: screen.availTop || 0 }; }
+function mstate(t, pct) { $('#mstate').textContent = t; if (pct != null) $('#mbar').style.width = pct + '%'; }
+async function runMeasure() {
+  document.body.classList.add('measuring');
+  const dpr = window.devicePixelRatio || 1;
+  try {
+    mstate('Talking to the box…', 5);
+    await api('POST', '/api/m/hello', { screen: scr(), dpr, win: { x: window.screenX, y: window.screenY, w: window.innerWidth, h: window.innerHeight } });
+    // 1. find the window: coarse grid until the pointer shows up here
+    mstate('Looking for this window…', 15);
+    let a1 = null, s1 = null;
+    const N = 8;
+    outer: for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+      const ax = (i + 0.5) * 32768 / N, ay = (j + 0.5) * 32768 / N;
+      const s = await moveTo(ax, ay);
+      if (s) { a1 = { x: ax, y: ay }; s1 = s; break outer; }
+    }
+    if (!a1) throw new Error('pointer never reached this window');
+    // 2. calibrate: two more points D away on each axis (inwards if needed)
+    mstate('Measuring…', 45);
+    const D = 1024;
+    const axis = async (dx, dy) => {
+      for (const sgn of [1, -1]) {
+        const s = await moveTo(a1.x + sgn * dx, a1.y + sgn * dy);
+        if (s) return { s, d: sgn * (dx || dy) };
+      }
+      throw new Error('pointer left the window during calibration');
+    };
+    const cx = await axis(D, 0), cy = await axis(0, D);
+    const scaleX = (cx.s.x - s1.x) / cx.d, scaleY = (cy.s.y - s1.y) / cy.d;     // CSS px per absolute unit
+    const desktop = { x: s1.x - a1.x * scaleX, y: s1.y - a1.y * scaleY, w: 32768 * scaleX, h: 32768 * scaleY };
+    // 3. monitors: this one, then move the window to the next monitor with the OS shortcut
+    mstate('Reading the monitors…', 70);
+    const seen = [];
+    const add = () => {
+      const k = screen.availLeft + ',' + (screen.availTop || 0) + ',' + screen.width + ',' + screen.height;
+      if (seen.some(m => m.k === k)) return false;
+      seen.push({ k, x: screen.availLeft || 0, y: screen.availTop || 0, w: screen.width, h: screen.height, dpr: window.devicePixelRatio || 1 });
+      return true;
+    };
+    add();
+    const fits = () => seen.reduce((a, m) => a + m.w * m.h, 0) >= desktop.w * desktop.h * 0.98;
+    for (let n = 0; n < 6 && !fits(); n++) {
+      try { await api('POST', '/api/m/key', { keys: 'WIN+SHIFT+RIGHT' }); } catch (e) { break; }
+      await sleep(350);
+      if (!add()) break;
+    }
+    // monitors in device pixels, primary-relative (CSS px * that monitor's scale)
+    let monitors = seen.map(m => ({ w: Math.round(m.w * m.dpr), h: Math.round(m.h * m.dpr), x: Math.round(m.x * m.dpr), y: Math.round(m.y * m.dpr), scale: +m.dpr.toFixed(2) }));
+    if (!fits() && seen.length === 1) {
+      // only one monitor known but the desktop is bigger: report the desktop as one area, the box then knows its size
+      monitors = [{ w: Math.round(desktop.w * dpr), h: Math.round(desktop.h * dpr), x: Math.round(desktop.x * dpr), y: Math.round(desktop.y * dpr), scale: +dpr.toFixed(2) }];
+    }
+    mstate('Saving…', 90);
+    await api('POST', '/api/m/result', { monitors, desktop: { x: Math.round(desktop.x * dpr), y: Math.round(desktop.y * dpr), w: Math.round(desktop.w * dpr), h: Math.round(desktop.h * dpr) },
+                                          abs_check: { scale_x: +scaleX.toFixed(5), scale_y: +scaleY.toFixed(5) } });
+    mstate('Done: ' + monitors.map(m => `${m.w}×${m.h} (${shapeName(m.w, m.h)})`).join(', ') + '. This tab closes by itself.', 100);
+    await sleep(600);
+    await api('POST', '/api/m/close', { focused: document.hasFocus() });
+  } catch (e) {
+    mstate('Measurement failed: ' + e.message + '. You can close this tab.', 100);
+    try { await api('POST', '/api/m/close', { focused: false, error: e.message }); } catch (_) {}
+  }
+}
+
+// ------------------------------------------------------------------ file mode
 function load(text, name) {
   const r = parse(text);
   S = r.s; extras = r.ex; fileName = name; dirty = false;
@@ -489,6 +763,7 @@ $('#filePick').addEventListener('change', async e => {
   fileHandle = null; load(await f.text(), f.name); e.target.value = '';
 });
 async function save() {
+  if (DEVICE) { scheduleSave(); return; }
   const text = write(S);
   if (fileHandle && fileHandle.createWritable) {
     try {
@@ -513,33 +788,40 @@ $('#btnSave').addEventListener('click', save);
 let armed = null;
 $('#btnDefaults').addEventListener('click', e => {
   const btn = e.currentTarget;
-  if (dirty && !armed) {            // two clicks instead of confirm(), which some browsers block
+  if (!armed) {                     // two clicks instead of confirm(), which some browsers block
     btn.textContent = 'Click again to reset';
     armed = setTimeout(() => { btn.textContent = 'Defaults'; armed = null; }, 3000);
     return;
   }
   clearTimeout(armed); armed = null; btn.textContent = 'Defaults';
-  S = clone(DEFAULTS); extras = {}; changed(); toast('All settings back to default (not saved yet)');
+  const keepMon = { pc1: S.pc1.monitors, pc2: S.pc2.monitors };
+  S = clone(DEFAULTS); extras = {};
+  if (DEVICE) { S.pc1.monitors = keepMon.pc1; S.pc2.monitors = keepMon.pc2; }   // measurements belong to the box
+  changed(); toast('All settings back to default');
 });
 $('#btnCopy').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(write(S)); toast('Copied'); } catch (e) { toast('Copy failed: select the text and copy it'); }
 });
-document.addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('drop'); });
-document.addEventListener('dragleave', e => { if (e.target === document.documentElement || e.target === document.body) document.body.classList.remove('drop'); });
-document.addEventListener('drop', async e => {
-  e.preventDefault(); document.body.classList.remove('drop');
-  const item = e.dataTransfer.items && e.dataTransfer.items[0];
-  if (item && item.getAsFileSystemHandle) {
-    try { const h = await item.getAsFileSystemHandle(); if (h.kind === 'file') { fileHandle = h; load(await (await h.getFile()).text(), h.name); return; } } catch (_) {}
-  }
-  const f = e.dataTransfer.files[0]; if (f) { fileHandle = null; load(await f.text(), f.name); }
-});
+if (!DEVICE) {
+  document.addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('drop'); });
+  document.addEventListener('dragleave', e => { if (e.target === document.documentElement || e.target === document.body) document.body.classList.remove('drop'); });
+  document.addEventListener('drop', async e => {
+    e.preventDefault(); document.body.classList.remove('drop');
+    const item = e.dataTransfer.items && e.dataTransfer.items[0];
+    if (item && item.getAsFileSystemHandle) {
+      try { const h = await item.getAsFileSystemHandle(); if (h.kind === 'file') { fileHandle = h; load(await (await h.getFile()).text(), h.name); return; } } catch (_) {}
+    }
+    const f = e.dataTransfer.files[0]; if (f) { fileHandle = null; load(await f.text(), f.name); }
+  });
+  window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+}
 document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); } });
-window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
 
 build();
 render();
-setStatus('No file opened: showing the defaults. Open <b>KMSWITCH.TXT</b> from the kmswitch drive, or drop it on this page.');
+if (MEASURE) runMeasure();
+else if (DEVICE) startDevice();
+else setStatus('Offline copy: open <b>KMSWITCH.TXT</b> from the kmswitch drive, or drop it here. On a PC with the box, <b>http://192.168.7.1</b> saves by itself.');
 </script>
 </body>
 </html>

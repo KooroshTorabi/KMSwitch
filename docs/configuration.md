@@ -3,35 +3,126 @@
 kmswitch works without any configuration. Everything below is optional: the defaults are used for anything
 that is missing, misspelled or out of range.
 
-The settings live in one plain-text file, **`KMSWITCH.TXT`**, in the root of the microSD card (the shared
-drive that appears on the active PC). Edit it with any text editor (Notepad, TextEdit, gedit), or with the
-visual editor **`KMSWITCH.HTM`** next to it (see [Visual editor](#visual-editor)).
-The firmware reads the file at power-up and again whenever it changes. Problems (unknown key, bad value) are
-written to **`KMSWITCH.LOG`** on the same drive; the line in question falls back to its default.
+There are two ways to change the settings, and both end up in the same place:
+
+1. **The settings page served by the box itself** (recommended). Press **Win+F10**, or open
+   `http://192.168.7.1` in any browser. Changes are saved on the box automatically; there is no file to pick,
+   copy or overwrite. The page also shows which PCs are connected and measures their screens by itself.
+2. **The settings file** `KMSWITCH.TXT` in the root of the microSD card (the shared drive). Edit it with any text
+   editor, or with the offline copy of the settings page, `KMSWITCH.HTM`, on the same drive. This is the fallback
+   for PCs where the box's USB network is blocked or switched off.
+
+The firmware reads `KMSWITCH.TXT` at power-up and whenever it changes, and the settings page writes to the same
+file through the box. Problems (unknown key, bad value) are written to `KMSWITCH.LOG` on the same drive; the
+line in question falls back to its default.
 
 Files for the card: [`config/KMSWITCH.TXT`](../config/KMSWITCH.TXT) (all defaults, with comments) and
-[`config/KMSWITCH.HTM`](../config/KMSWITCH.HTM) (visual editor). Copy both to the root of the card.
+[`config/KMSWITCH.HTM`](../config/KMSWITCH.HTM) (the settings page). The firmware puts both on a new card
+by itself; copy them only if you prepare a card by hand. The protocol between the page and the box is in
+[web-api.md](web-api.md).
 
-## Why the mouse needs settings, but not the screen resolution
+## Why the mouse needs settings, but no screen resolution
 
 The box reports the pointer to each PC as an **absolute** position (0 to 32767 on each axis), not as a
-movement. The PC stretches that range over its whole desktop, so the box never needs to know how many pixels a
-screen has, and edge switching works on any resolution and with several monitors per PC (the switch happens
-at the outer edge of the whole desktop).
+movement. The PC stretches that range over its whole desktop, so the pointer always lands where the box thinks
+it is, on any resolution and with any number of monitors.
 
 What does differ between PCs, and what the settings are for:
 
-| Problem | Setting |
+| Problem | Handled by |
 |---|---|
-| Crossing a screen takes the same hand movement on every PC, so a big or high-resolution screen feels fast and coarse | `speed_x`, `speed_y` per PC |
-| A 16:9 and a 21:9 (or portrait) screen give different horizontal and vertical speeds | `aspect` per PC |
+| Crossing a screen takes the same hand movement on every PC, so a big or high-resolution screen feels fast and coarse | measured screen size, plus `speed_x` / `speed_y` per PC |
+| Screens of different shape (16:9, 16:10, 21:9, portrait) give different horizontal and vertical speeds | measured monitors (or `aspect` if not measured) |
+| Two monitors of different size on one PC leave "holes" in the desktop that the pointer cannot enter | measured monitors: the box keeps its pointer inside the real screens |
 | Which side PC 2 is on | `layout` |
-| Screens of different height or mounted at different heights | `y_offset` per PC |
+| Screens mounted at different heights | `y_offset` / `x_offset` per PC |
 | Windows and macOS do not apply pointer acceleration to absolute devices | `accel` per PC (done in the firmware) |
 | Games, Blender and remote-desktop tools that capture the mouse need relative movement | relative mode hotkey |
 
 In the BIOS / boot menu none of this applies: the box falls back to a plain boot-protocol mouse and you
 switch with the hotkey.
+
+## The settings page
+
+The box adds a small USB network adapter to each PC (CDC-NCM, with RNDIS for Windows 10). It is a private
+link between that PC and the box only: no internet, no gateway, no change to the PC's normal network.
+The box answers at **`http://192.168.7.1`** on both PCs and serves the settings page from its own flash.
+
+What the page does that a file cannot:
+
+- **Saves by itself.** Every change goes to the box about a second after you make it ("Saved" appears in the
+  header). The box writes `KMSWITCH.TXT`, so the file and the page never disagree.
+- **Shows what is connected, live.** A PC whose cable is not plugged in (or that is switched off) is drawn grey
+  and marked *not connected*; its settings stay visible but locked. The moment it is plugged in, it turns active,
+  without reloading the page.
+- **Shows the real screens.** Each PC is drawn with its actual monitors, resolutions and shapes, as measured
+  (see below). A PC that is connected but not measured yet is marked *not measured*.
+
+The same page works on either PC: the box forwards PC 2's requests to MCU-A over the isolated UART.
+
+Opening it with **Win+F10** (`open_config`): the box types the address into the active PC: `Win+R`,
+`http://192.168.7.1`, Enter on Windows; `Cmd+Space`, `Terminal`, `open http://192.168.7.1; exit` on macOS;
+`Ctrl+Alt+T`, `xdg-open http://192.168.7.1; exit` on Linux. Only plain characters are typed, so the
+keyboard layout matters much less than with file paths, but set `kbd_layout` for non-US layouts anyway.
+
+Set `usb_network = off` to remove the network adapter (for example on PCs where USB network adapters are not
+allowed). The box then behaves as before: keyboard, mouse and drive only, configured through the file.
+
+## Automatic screen measurement
+
+The box measures the screens of both PCs by itself. While it does, both status LEDs (and the external RGB LED,
+if fitted) blink, and keyboard and mouse input is held back for those few seconds.
+
+**When:** the first time a PC is connected to a port that has no measurement yet, when you press **Win+F9**
+(`measure`), or when you click **Measure screens** on the settings page. `auto_measure = off` limits it to the
+hotkey and the button.
+
+**What happens, for each connected PC in turn (about 3 to 5 seconds each):**
+
+1. The box switches to that PC and opens `http://192.168.7.1/measure` the same way as Win+F10.
+2. The measurement page covers its window and asks the box to place the pointer at a series of absolute
+   positions. It first sweeps a coarse grid until the pointer shows up inside the page, then places it at
+   points a known distance apart. From where the pointer actually appears, the page learns how the PC maps the
+   box's 0-32767 range onto its desktop: the size of the whole desktop in pixels, and so its exact shape
+   (2560 x 1600 is 16:10, 3440 x 1440 is 21:9).
+3. The page reads the monitor it is on (`window.screen`: resolution, position, scaling). To reach the other
+   monitors of the same PC it asks the box to press the system shortcut that moves a window to the next monitor
+   (Windows: `Win+Shift+Right`; GNOME and KDE: `Super+Shift+Right`) and reads `window.screen` again, until it
+   is back on the first monitor.
+4. The page sends the result to the box, which stores it in `KMSWITCH.TXT` (`monitors = ...`, see below).
+   If the page still has the keyboard focus, the box closes its tab with `Ctrl+W` (`Cmd+W` on a Mac).
+5. The box switches back to the PC you were on and the LEDs stop blinking.
+
+**Limits:** the PC must be unlocked (not at the login screen) and the launch must not be blocked by policy.
+If no answer comes within 8 seconds, the box gives up, blinks the LEDs red twice, switches back and marks that
+PC *not measured*; everything keeps working with the `aspect` setting instead. macOS has no shortcut that moves
+a window to another display, so on a Mac with several displays the page asks you to drag its window to the
+other display once; the whole-desktop size is still measured automatically.
+
+Re-measure (Win+F9) after you add, remove or rearrange monitors on a PC.
+
+## Several monitors on one PC
+
+The measurement records every monitor of a PC: its resolution, its position on the desktop and its scaling.
+Monitors of different shape and size are fine, for example a 16:10 laptop panel next to a 21:9 screen, or a
+landscape screen next to a portrait one. The firmware uses this to:
+
+- keep its pointer inside the real monitors (the empty corners of the combined desktop cannot be entered, just as
+  with a normal mouse),
+- keep the speed the same in pixels on every monitor, also when they use different scaling,
+- switch PCs only at an outer edge that really has a monitor on the `layout` side, and carry the pointer over
+  at the same height (or position along the edge) on the monitor it enters.
+
+The settings page draws each PC's monitors in their real arrangement next to the other PC's.
+
+## Optional companion app (planned)
+
+A small portable program (one file per OS, nothing to install) is planned for after the firmware. It would talk
+to the box over a vendor HID interface, which needs no driver on any OS, so it works without the USB network
+adapter and without a browser. It reads every monitor directly from the OS, also on macOS, re-measures by itself
+when a monitor is plugged in or rearranged, and could later share the clipboard between the PCs.
+It stays optional: the box, the settings page and the file keep working without it, which matters on PCs where
+running unsigned programs is not allowed.
 
 ## File format
 
@@ -55,7 +146,9 @@ key = value      # comment after a value
 | `edge_delay_ms` | 0 - 1000 | `0` | Pointer must stay at the edge this long before switching (stops accidental switches) |
 | `edge_corner_block` | on / off | `on` | No switch while the pointer is in a screen corner (avoids clashes with hot corners / close buttons) |
 | `start_on` | `pc1`, `pc2`, `last` | `pc1` | Active PC after power-up |
-| `config_ui` | on / off | `on` | Allow the "open visual editor" hotkey |
+| `usb_network` | on / off | `on` | Offer the USB network adapter and the settings page at `http://192.168.7.1` |
+| `auto_measure` | on / off | `on` | Measure a PC's screens automatically the first time it is connected |
+| `config_ui` | on / off | `on` | Allow the `open_config` and `measure` hotkeys to type into the PC |
 
 ### `[hotkeys]`
 
@@ -69,13 +162,15 @@ Set a hotkey to `none` to disable it.
 | `speed_up` | `WIN+SHIFT+UP` | Active PC: speed x 1.1 |
 | `speed_down` | `WIN+SHIFT+DOWN` | Active PC: speed / 1.1 |
 | `speed_reset` | `WIN+SHIFT+HOME` | Active PC: speed back to 1.0 |
-| `open_config` | `WIN+F10` | Open the visual editor on the active PC (see below) |
+| `open_config` | `WIN+F10` | Open the settings page on the active PC |
+| `measure` | `WIN+F9` | Measure the screens of both PCs now |
 
 Changes made with `speed_up` / `speed_down` / `speed_reset` are written back to `KMSWITCH.TXT` two seconds
 after the last key press, so they survive a power cycle.
 
 **Modifiers:** `CTRL`, `SHIFT`, `ALT`, `WIN` (the Windows key; Command on a Mac keyboard), plus
-`RCTRL`, `RSHIFT`, `RALT`, `RWIN` for the right-hand keys only.
+`RCTRL`, `RSHIFT`, `RALT`, `RWIN` for the right-hand keys only. They are written in the order
+`CTRL+ALT+WIN+SHIFT+key`.
 **Keys:** `A`-`Z`, `0`-`9`, `F1`-`F24`, `UP`, `DOWN`, `LEFT`, `RIGHT`, `HOME`, `END`, `PGUP`, `PGDN`,
 `INS`, `DEL`, `ESC`, `TAB`, `SPACE`, `ENTER`, `BACKSPACE`, `PAUSE`, `SCROLLLOCK`, `NUMLOCK`, `CAPSLOCK`,
 `PRINTSCREEN`, `KP0`-`KP9`.
@@ -85,49 +180,32 @@ A hotkey with no modifier (for example `SCROLLLOCK`) is allowed; pick a key you 
 
 | Key | Values | Default | Meaning |
 |---|---|---|---|
-| `name` | text | `PC 1` / `PC 2` | Shown in the visual editor and the log |
-| `aspect` | `16:9`, `16:10`, `21:9`, `32:9`, `4:3`, `5:4`, `9:16`, or `W:H` | `16:9` | Shape of the PC's whole desktop; evens out horizontal and vertical speed |
+| `name` | text | `PC 1` / `PC 2` | Shown on the settings page and in the log |
 | `speed_x` | 0.25 - 4.0 | `1.0` | Horizontal speed |
-| `speed_y` | 0.25 - 4.0 | `1.0` | Vertical speed (already corrected for `aspect`; leave equal to `speed_x` normally) |
+| `speed_y` | 0.25 - 4.0 | `1.0` | Vertical speed (normally equal to `speed_x`) |
 | `accel` | `off`, `low`, `medium`, `high` | `medium` | Pointer acceleration curve |
-| `y_offset` | -50 - 50 (% of screen height) | `0` | Shifts where the pointer appears after crossing the edge (for `layout = left` / `right`); `x_offset` does the same for `above` / `below` |
-| `x_offset` | -50 - 50 | `0` | See `y_offset` |
-| `os` | `windows`, `mac`, `linux` | `windows` | Only used by the `open_config` hotkey |
-| `kbd_layout` | `us`, `de`, `at`, `ch`, `fr`, `uk`, `it`, `es` | `us` | The keyboard layout set in that PC's OS; only used by `open_config` to type the launch command correctly |
+| `y_offset` | -50 - 50 (% of screen height) | `0` | Shifts where the pointer appears after crossing the edge (for `layout = left` / `right`); positive moves it down |
+| `x_offset` | -50 - 50 (% of screen width) | `0` | The same for `layout = above` / `below`; positive moves it right |
+| `os` | `windows`, `mac`, `linux` | `windows` | Used by the `open_config` and `measure` hotkeys |
+| `kbd_layout` | `us`, `de`, `at`, `ch`, `fr`, `uk`, `it`, `es` | `us` | The keyboard layout set in that PC's OS, so typed commands come out right |
+| `monitors` | written by the box | empty | Measured monitors, see below. Delete the line to forget a measurement |
+| `aspect` | `16:9`, `16:10`, `21:9`, `32:9`, `4:3`, `5:4`, `9:16`, or `W:H` | `16:9` | Shape of the whole desktop, used only while `monitors` is empty |
 
-**How the speed is applied.** For a mouse movement of `dx`, `dy` counts the firmware adds
-`dx * base * speed_x * accel(v)` to the horizontal position and
-`dy * base * speed_y * (W / H) * accel(v)` to the vertical one (with `aspect = W:H`), then clamps to 0 - 32767.
-`base` is chosen so that with `speed = 1.0` an 800 DPI mouse crosses the screen in about 12 cm.
+`monitors` lists every monitor as `WIDTHxHEIGHT+X+Y@SCALE`, separated by commas, in desktop pixels with the
+PC's own origin (the primary monitor's top-left corner is `+0+0`; positions can be negative). `SCALE` is the
+OS scaling (1.25 = 125 %). Example, a 16:10 laptop with a 21:9 screen to its right, 300 px higher:
+
+```
+monitors = 2560x1600+0+0@1.5, 3440x1440+2560-300@1
+```
+
+**How the speed is applied.** For a mouse movement of `dx`, `dy` counts, the firmware adds
+`dx * base * speed_x * accel(v)` and `dy * base * speed_y * accel(v)` desktop pixels to its pointer, keeps it
+inside the measured monitors, and converts it to the 0 - 32767 range of that PC's whole desktop. `base` is chosen
+so that with speed 1.0 an 800 DPI mouse moves about as fast as on a 1080p screen without acceleration,
+on every monitor. Without a measurement it uses `aspect` and assumes one 1920-pixel-wide screen.
 When the pointer crosses into the other PC, its position along the shared edge is carried over as a fraction
-of the screen and then shifted by the target PC's `y_offset` (or `x_offset`).
-
-## Visual editor
-
-`KMSWITCH.HTM` is a single web page with no installation and no internet access. It runs in any current browser
-on Windows, macOS, Linux and ChromeOS. It shows the two screens side by side as you set them up, with sliders for
-speed and offset, drop-downs for the hotkeys, and a live preview of the resulting `KMSWITCH.TXT`.
-
-- **Open:** double-click `KMSWITCH.HTM` on the kmswitch drive, then **Open KMSWITCH.TXT** and pick the file on the
-  same drive.
-- **Save:** in Chrome, Edge, Opera and Brave the page writes straight back to the file. In Firefox and Safari it
-  downloads a new `KMSWITCH.TXT`; copy it onto the kmswitch drive, replacing the old one.
-
-### Opening it with a hotkey (`open_config`, default `WIN+F10`)
-
-The box is a keyboard, so on this hotkey it types a short launch command on the active PC. That is why it needs
-to know the PC's `os` and `kbd_layout`; a wrong layout types wrong characters. The SD card's volume label must be
-`KMSWITCH` (the firmware formats new cards that way).
-
-| `os` | What the box types |
-|---|---|
-| `windows` | `Win+R`, then `powershell -w h -c "ii ((Get-Volume -FileSystemLabel KMSWITCH).DriveLetter+':\KMSWITCH.HTM')"` and Enter |
-| `mac` | `Cmd+Space`, `Terminal`, Enter, then `open /Volumes/KMSWITCH/KMSWITCH.HTM; exit` and Enter |
-| `linux` | `Ctrl+Alt+T`, then `xdg-open "$(findmnt -nro TARGET -S LABEL=KMSWITCH)/KMSWITCH.HTM"; exit` and Enter |
-
-This is best effort: a busy PC, an unusual desktop or a locked-down Run dialog can stop it. Opening
-`KMSWITCH.HTM` from the drive by hand always works. Set `config_ui = off` if you do not want the box to type
-commands at all.
+of the monitor it leaves and shifted by the target PC's `y_offset` (or `x_offset`).
 
 ## Example
 
@@ -143,16 +221,15 @@ speed_down = CTRL+ALT+PGDN
 
 [pc1]
 name = Office laptop
-aspect = 16:10
 speed_x = 0.9
 speed_y = 0.9
+monitors = 2560x1600+0+0@1.5
 
 [pc2]
-name = Desktop (4K)
-aspect = 21:9
+name = Desktop
 speed_x = 1.3
 speed_y = 1.3
 y_offset = -10
-os = windows
 kbd_layout = de
+monitors = 3440x1440+0+0@1, 1440x2560+3440-560@1
 ```

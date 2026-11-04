@@ -63,9 +63,9 @@ Both variants have the same features, the same GPIO map (so one firmware fits bo
 
 ## Configuration (optional)
 
-It works without any setup. To tune the mouse for different screens (speed per PC, screen shape, which side PC 2 is on, offset between screens, acceleration), change the hotkeys, or add a relative mode for games, put [`config/KMSWITCH.TXT`](config/KMSWITCH.TXT) and the visual editor [`config/KMSWITCH.HTM`](config/KMSWITCH.HTM) on the microSD card.
-The editor is one web page that runs offline in any browser and opens with **Win+F10**. The screen resolution itself never needs to be set, because the pointer is sent as an absolute position.
-Full reference: [docs/configuration.md](docs/configuration.md).
+It works without any setup. To tune the mouse for different screens, change the hotkeys or add a relative mode for games, press **Win+F10**: the box opens its own settings page (`http://192.168.7.1`, served by the box over a private USB network link, any browser, nothing installed). Changes are saved on the box by themselves, the page shows live which PC is connected, and the box measures each PC's monitors automatically (LEDs blink for a few seconds while it switches over and measures), including several monitors of different shape on one PC.
+Where the USB network is not allowed, the same page works offline from the microSD card ([`config/KMSWITCH.HTM`](config/KMSWITCH.HTM)) together with the settings file [`config/KMSWITCH.TXT`](config/KMSWITCH.TXT).
+Full reference: [docs/configuration.md](docs/configuration.md); page-to-box protocol: [docs/web-api.md](docs/web-api.md).
 
 ![Visual configuration editor](docs/config-editor.png)
 
@@ -92,7 +92,7 @@ hardware/
   variant-b-rp2040/            KiCad project + fab/
 config/
   KMSWITCH.TXT                 default settings file for the microSD card
-  KMSWITCH.HTM                 visual settings editor (offline, any browser)
+  KMSWITCH.HTM                 settings page (served by the box, or offline from the card)
 enclosure/
   kmswitch_case.scad           parametric 3D-printable case (variant = "A" or "B")
   stl/                         ready-to-print bottom + lid for both variants
