@@ -165,6 +165,9 @@ Set a hotkey to `none` to disable it.
 | `open_config` | `WIN+F10` | Open the settings page on the active PC |
 | `measure` | `WIN+F9` | Measure the screens of both PCs now |
 
+**Reserved:** `WIN+F8` confirms a firmware update and `CTRL+ALT+SHIFT+F8` (held 3 s) restarts into BOOTSEL; see
+[firmware-update.md](firmware-update.md). Do not assign them to anything else.
+
 Changes made with `speed_up` / `speed_down` / `speed_reset` are written back to `KMSWITCH.TXT` two seconds
 after the last key press, so they survive a power cycle.
 

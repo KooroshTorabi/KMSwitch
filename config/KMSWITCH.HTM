@@ -66,6 +66,7 @@
   .banner.show { display: block; }
   .banner.off { background: var(--bg); border: 1px dashed var(--off); color: var(--muted); }
   .banner.todo { background: var(--accent-soft); color: var(--ink); }
+  .banner.big { font-size: 15px; padding: 12px 14px; border: 2px solid var(--warn); background: transparent; }
   .mons { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
   .mons li { display: flex; gap: 8px; align-items: baseline; font-variant-numeric: tabular-nums; }
   .mons li b { font-weight: 600; }
@@ -156,6 +157,22 @@
     <h2>Hotkeys</h2>
     <p class="hint">Pick modifiers and a key, or "none" to turn a hotkey off. The PC never sees these keys. WIN is the Windows key (Command on a Mac).</p>
     <table class="hk" id="hk"></table>
+  </section>
+
+  <section class="card wide device-only" id="fwcard">
+    <h2>Firmware</h2>
+    <p class="hint">Updates install on both microcontrollers from this PC. Your settings stay as they are.
+      Details: docs/firmware-update.md.</p>
+    <div class="banner todo" id="fwbanner"></div>
+    <div class="row"><label class="k">Installed</label><div id="fwcur">…</div></div>
+    <div class="row"><label class="k">Latest</label><div id="fwlatest">checking…</div></div>
+    <div class="row"><label class="k"></label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="primary" id="btnFwUpdate" style="display:none"></button>
+        <button id="btnFwFile">Install from file…</button>
+        <button id="btnFwCancel" style="display:none">Cancel update</button>
+        <input type="file" id="fwPick" accept=".kmsfw" hidden>
+      </div></div>
   </section>
 
   <section class="card wide">
@@ -599,7 +616,7 @@ async function api(method, path, body, type = 'application/json') {
   const r = await fetch(path, { method, cache: 'no-store',
     headers: body === undefined ? {} : { 'Content-Type': type },
     body: body === undefined ? undefined : (type === 'application/json' ? JSON.stringify(body) : body) });
-  if (!r.ok) throw new Error(method + ' ' + path + ': ' + r.status);
+  if (!r.ok) { let e = ''; try { e = (await r.json()).error || ''; } catch (_) {} throw new Error(e || (method + ' ' + path + ': ' + r.status)); }
   const ct = r.headers.get('content-type') || '';
   return ct.includes('json') ? r.json() : r.text();
 }
@@ -629,7 +646,8 @@ async function poll() {
     }
     if (was && was.measuring && !st.measuring) toast('Measurement finished');
     if (dirty && !saveTimer && !saving) scheduleSave();
-    render(); setStatus();
+    if (was && was.update && st.update && was.update.state !== 'done' && st.update.state === 'done') toast('Firmware ' + st.update.version + ' installed');
+    render(); setStatus(); renderFw();
     void monChanged;
   } catch (e) {
     status = null; setStatus('<span style="color:var(--warn)">The box does not answer. Is it plugged in?</span>');
@@ -647,12 +665,88 @@ async function startDevice() {
   } catch (e) { toast('Could not read the settings from the box'); }
   render();
   poll();
+  checkLatest();
 }
 $('#btnMeasure').addEventListener('click', async () => {
   const pcs = ['pc1', 'pc2'].filter(connected);
   try { await api('POST', '/api/measure', { pcs }); toast('The box now switches to each PC for a few seconds. LEDs blink while it measures.'); }
   catch (e) { toast('The box did not start the measurement'); }
 });
+
+// ------------------------------------------------------------------ firmware
+const LATEST_URL = 'https://raw.githubusercontent.com/KooroshTorabi/KMSwitch/main/firmware/latest.json';
+let latest = null, latestErr = null;
+const FW_STATES = { verifying: 'Checking the update file…', confirm: '', installing: 'Installing', rebooting: 'Restarting the box…',
+                    done: 'Update finished', failed: 'Update failed' };
+const REJECT = { signature: 'the file is not signed by the kmswitch project', board: 'the file is for the other board variant',
+                 hash: 'the file is damaged', format: 'this is not a kmswitch update file', downgrade: 'it is older than the installed version',
+                 busy: 'the box is busy, try again in a moment' };
+function vcmp(a, b) {
+  const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
+  for (let i = 0; i < 3; i++) { const d = (pa[i] || 0) - (pb[i] || 0); if (d) return d; }
+  return 0;
+}
+async function checkLatest() {
+  try {
+    const r = await fetch(LATEST_URL, { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    latest = await r.json(); latestErr = null;
+  } catch (e) { latest = null; latestErr = 'could not check (no internet on this PC?)'; }
+  renderFw();
+}
+function renderFw() {
+  if (!DEVICE || !status) return;
+  const board = status.board || 'A';
+  $('#fwcur').innerHTML = `<b>${esc(status.fw || '?')}</b> · board ${esc(board)}` +
+    (status.fw_b && status.fw_b !== status.fw ? ` · <span style="color:var(--warn)">MCU-B has ${esc(status.fw_b)}, the box will bring it in line</span>` : '');
+  const u = status.update, busy = u && !['done', 'failed'].includes(u.state);
+  const btn = $('#btnFwUpdate');
+  if (latestErr) { $('#fwlatest').textContent = latestErr; btn.style.display = 'none'; }
+  else if (!latest) { $('#fwlatest').textContent = 'checking…'; btn.style.display = 'none'; }
+  else if (!latest.version) { $('#fwlatest').textContent = 'no release published yet'; btn.style.display = 'none'; }
+  else {
+    const newer = status.fw === 'dev' || vcmp(latest.version, status.fw || '0') > 0;
+    $('#fwlatest').innerHTML = `<b>${esc(latest.version)}</b>${latest.date ? ' · ' + esc(latest.date) : ''}${latest.notes ? ' · ' + esc(latest.notes) : ''}` +
+      (newer ? '' : ' · <span style="color:var(--ok)">up to date</span>');
+    btn.style.display = newer && latest.files && latest.files[board] ? '' : 'none';
+    btn.textContent = 'Update to ' + latest.version;
+  }
+  btn.disabled = $('#btnFwFile').disabled = !!busy;
+  $('#btnFwCancel').style.display = u && u.state === 'confirm' ? '' : 'none';
+  const ban = $('#fwbanner');
+  ban.classList.toggle('show', !!u);
+  ban.classList.toggle('big', !!u && u.state === 'confirm');
+  if (u) {
+    ban.innerHTML = u.state === 'confirm'
+      ? `<b>Press Win+F8 on the keyboard connected to kmswitch</b> to install ${esc(u.version)} (within 60 s, Esc cancels). The LEDs blink orange.`
+      : `${FW_STATES[u.state] || u.state}${u.state === 'installing' ? ' ' + esc(u.version) + ': ' + (u.progress || 0) + ' %' : ''}${u.message ? ' · ' + esc(u.message) : ''}`;
+  }
+}
+async function sendFirmware(buf, label) {
+  try {
+    toast('Sending ' + label + ' to the box…');
+    const r = await api('POST', '/api/firmware', buf, 'application/octet-stream');
+    toast('The box accepted ' + (r && r.version ? 'version ' + r.version : 'the file') + '. Confirm with Win+F8 on its keyboard.');
+  } catch (e) { toast('Not installed: ' + (REJECT[e.message] || e.message)); }
+}
+$('#btnFwUpdate').addEventListener('click', async () => {
+  const f = latest && status && latest.files[status.board || 'A']; if (!f) return;
+  try {
+    const r = await fetch(f.url, { cache: 'no-store' }); if (!r.ok) throw new Error(r.status);
+    const buf = await r.arrayBuffer();
+    if (crypto.subtle && f.sha256) {     // the box checks the signature anyway; this only catches a broken download early
+      const h = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', buf))).map(b => b.toString(16).padStart(2, '0')).join('');
+      if (h !== f.sha256.toLowerCase()) throw new Error('download damaged, try again');
+    }
+    await sendFirmware(buf, 'version ' + latest.version);
+  } catch (e) { toast('Download failed: ' + e.message + '. Use "Install from file" instead.'); }
+});
+$('#btnFwFile').addEventListener('click', () => $('#fwPick').click());
+$('#fwPick').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  await sendFirmware(await f.arrayBuffer(), f.name);
+});
+$('#btnFwCancel').addEventListener('click', async () => { try { await api('POST', '/api/firmware/cancel', {}); } catch (_) {} });
 
 // ------------------------------------------------------------------ measurement mode
 const sleep = ms => new Promise(r => setTimeout(r, ms));

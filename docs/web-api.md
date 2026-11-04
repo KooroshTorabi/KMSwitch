@@ -29,18 +29,24 @@ Polled by the page about once a second.
 ```json
 {
   "fw": "1.0.0",
+  "fw_b": "1.0.0",
+  "board": "A",
   "you": "pc1",
   "active": "pc1",
   "pcs": {
     "pc1": { "connected": true,  "measured": "2026-11-04T10:12:00", "monitors": "2560x1600+0+0@1.5" },
     "pc2": { "connected": false, "measured": null, "monitors": "" }
   },
-  "measuring": null
+  "measuring": null,
+  "update": null
 }
 ```
 
 - `you`: which PC this request came from (the port the request arrived on).
 - `connected`: the PC has enumerated the box's USB device on that port (MCU-B reports its state to MCU-A over the UART).
+- `fw` / `fw_b`: firmware version of MCU-A / MCU-B (`dev` for an unsigned development build); `board`: `A` or `B`.
+- `update`: `null`, or `{ "version": "1.2.0", "state": "verifying" | "confirm" | "installing" | "rebooting" |
+  "done" | "failed", "progress": 0-100, "message": "..." }` while a firmware update runs.
 - `measuring`: `null`, or `{ "pc": "pc2", "state": "opening" | "probing" | "done" | "failed" }` while an
   automatic measurement runs.
 
@@ -60,6 +66,16 @@ before a measurement finished must not erase it).
 Body `{"pcs": ["pc1", "pc2"]}` (or one of them). Starts the automatic measurement (see
 [configuration.md](configuration.md#automatic-screen-measurement)). Answer `202`; progress shows in
 `/api/status`.
+
+### `POST /api/firmware`
+`application/octet-stream` body: a `.kmsfw` update bundle (at most 2 MB). The box checks magic, board, hashes and
+the Ed25519 signature before anything is written ([firmware-update.md](firmware-update.md)).
+Answer `202 {"version": "1.2.0"}` and `update.state` becomes `confirm`: the box waits up to 60 s for **Win+F8** on
+its own keyboard, then installs. Rejections answer `400 {"error": "signature" | "board" | "hash" | "format" |
+"downgrade" | "busy"}`.
+
+### `POST /api/firmware/cancel`
+Cancels an update that is still waiting for confirmation. Answer `200 {"ok": true}`.
 
 ## Measurement mode (`/measure`)
 

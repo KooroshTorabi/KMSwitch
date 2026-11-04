@@ -67,6 +67,8 @@ It works without any setup. To tune the mouse for different screens, change the 
 Where the USB network is not allowed, the same page works offline from the microSD card ([`config/KMSWITCH.HTM`](config/KMSWITCH.HTM)) together with the settings file [`config/KMSWITCH.TXT`](config/KMSWITCH.TXT).
 Full reference: [docs/configuration.md](docs/configuration.md); page-to-box protocol: [docs/web-api.md](docs/web-api.md).
 
+**Firmware updates** come from the same page (one click when a new release is out, confirmed with **Win+F8** on the box's own keyboard), from a file copied to the drive, or, as a last resort, through the RP2040's BOOTSEL mode. Updates are signed and roll back by themselves if the new version does not start: [docs/firmware-update.md](docs/firmware-update.md).
+
 ![Visual configuration editor](docs/config-editor.png)
 
 ## Schematics
@@ -96,6 +98,7 @@ config/
 enclosure/
   kmswitch_case.scad           parametric 3D-printable case (variant = "A" or "B")
   stl/                         ready-to-print bottom + lid for both variants
+firmware/                      (to come) firmware sources, latest.json and released update files
 tools/                         Python scripts that generate the schematics, boards and outputs
 docs/                          board and case renders, turntable animation, DRC reports
 ```

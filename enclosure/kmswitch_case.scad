@@ -63,7 +63,9 @@ sd    = [17, 0.9, 13.0, 2.6];     // microSD slot (front)
 led_windows = variant == "A"
     ? [[17, 12, 8], [63, 12, 8]]            // RP2040-Zero WS2812 shines through a thin window
     : [[28.5, 28.5, 3], [74.5, 28.5, 3]];   // green LEDs on GP25
-button_holes = variant == "A" ? [] : [[7.5, 24], [7.5, 28.5], [53.5, 24], [53.5, 28.5]];
+button_holes = variant == "A"
+    ? [[11.3, 2.95], [22.7, 2.95], [57.3, 2.95], [68.7, 2.95]]   // BOOT / RESET of each RP2040-Zero, next to its USB-C
+    : [[7.5, 24], [7.5, 28.5], [53.5, 24], [53.5, 28.5]];
 
 module rbox(w, d, h, r) {
     hull() for (x = [r, w - r], y = [r, d - r]) translate([x, y, 0]) cylinder(r = r, h = h, $fn = 40);
