@@ -164,7 +164,7 @@ key = value      # comment after a value
 | `edge_switch` | on / off | `on` | Switch by pushing the pointer past the edge |
 | `edge_delay_ms` | 0 - 1000 | `0` | Pointer must stay at the edge this long before switching (stops accidental switches) |
 | `edge_corner_block` | on / off | `on` | No switch while the pointer is in a screen corner (avoids clashes with hot corners / close buttons) |
-| `start_on` | `pc1`, `pc2`, `last` | `pc1` | Active PC after power-up |
+| `start_on` | `pc1`, `pc2`, `last` | `pc1` | Active PC after power-up. `last`: the PC that was active before a reset or firmware update (after a power cut: PC 1) |
 | `usb_network` | on / off | `on` | Offer the USB network adapter and the settings page at `http://192.168.7.1` |
 | `auto_measure` | on / off | `on` | Measure a PC's screens automatically the first time it is connected |
 | `config_ui` | on / off | `on` | Allow the `open_config` and `measure` hotkeys to type into the PC |

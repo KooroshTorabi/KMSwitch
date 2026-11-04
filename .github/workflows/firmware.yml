@@ -1,0 +1,25 @@
+name: firmware
+on:
+  push:
+    paths: ['firmware/**', '.github/workflows/firmware.yml']
+  pull_request:
+    paths: ['firmware/**']
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Toolchain
+        run: sudo apt-get update && sudo apt-get install -y gcc-arm-none-eabi libnewlib-arm-none-eabi ninja-build cmake
+      - name: Unit tests
+        run: firmware/test/run.sh
+      - name: Dependencies
+        run: firmware/get_deps.sh
+      - name: Build
+        run: |
+          cmake -S firmware -B firmware/build -G Ninja -DKMS_VERSION=ci-${GITHUB_SHA::7}
+          ninja -C firmware/build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kmswitch-firmware
+          path: firmware/build/*.uf2
