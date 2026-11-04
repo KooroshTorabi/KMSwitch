@@ -133,7 +133,8 @@
       <span class="hint" style="margin:0" id="arrInfo"></span>
       <button id="btnMeasure" class="device-only" title="The box switches to each PC for a few seconds and measures its monitors">Measure screens</button>
     </div>
-    <svg id="screens" viewBox="0 0 1000 300" aria-label="Screen arrangement" style="touch-action:none"></svg>
+    <svg id="screens" viewBox="0 0 1000 320" aria-label="Screen arrangement" style="touch-action:none"></svg>
+    <p class="hint" id="arrNote" style="margin:6px 0 0;text-align:center"></p>
   </section>
 
   <div class="pcs wide" id="pcs"></div>
@@ -601,7 +602,7 @@ function sideOf() {
 let view = null, drag = null;
 function initDrag() {
   const svg = $('#screens');
-  const pt = e => { const r = svg.getBoundingClientRect(); return { x: (e.clientX - r.left) * 1000 / r.width, y: (e.clientY - r.top) * 320 / r.height }; };
+  const pt = e => { const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; const q = p.matrixTransform(svg.getScreenCTM().inverse()); return { x: q.x, y: q.y }; };
   svg.addEventListener('pointerdown', e => {
     if (!e.target.closest('.drag') || !view) return;
     drag = { p: pt(e), off: arrangement(), k: view.k };
@@ -623,11 +624,11 @@ function drawScreens(fixedK) {
   const off = arrangement();
   const A = rectsOf('pc1'), B = rectsOf('pc2', off);
   const all = bbox(A.concat(B));
-  const k = fixedK || Math.min((W - 2 * pad) / all.w, (H - 2 * pad - 18) / all.h);
+  const k = fixedK || Math.min((W - 2 * pad) / all.w, (H - 2 * pad) / all.h);
   // keep the drawing still while dragging: centre on PC 1
   const a1 = bbox(A);
   const ox = fixedK && view ? view.ox : W / 2 - (all.x + all.w / 2) * k;
-  const oy = fixedK && view ? view.oy : (H - 18) / 2 - (all.y + all.h / 2) * k;
+  const oy = fixedK && view ? view.oy : H / 2 - (all.y + all.h / 2) * k;
   view = { k, ox, oy };
   void a1;
   const X = x => ox + x * k, Y = y => oy + y * k;
@@ -652,11 +653,13 @@ function drawScreens(fixedK) {
   const cs = contacts(off);
   if (S.general.edge_switch) cs.forEach(s =>
     g += `<line x1="${X(s.x1)}" y1="${Y(s.y1)}" x2="${X(s.x2)}" y2="${Y(s.y2)}" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>`);
-  const note = !S.general.edge_switch ? 'edge switching is off: use the hotkey' :
-    !(connected('pc1') && connected('pc2')) ? 'one PC is not connected' :
-    cs.length ? 'blue: the pointer crosses here · elsewhere the edge stops it' : 'the PCs do not touch: drag PC 2 against PC 1';
+  const blue = '<span style="display:inline-block;width:22px;height:4px;border-radius:2px;background:var(--accent);vertical-align:middle;margin-right:6px"></span>';
+  const note = !S.general.edge_switch ? 'Edge switching is off: switch with the hotkey.' :
+    !(connected('pc1') && connected('pc2')) ? 'One PC is not connected.' :
+    cs.length ? blue + 'The pointer crosses to the other PC here. Every other edge stops it.' : 'The PCs do not touch: drag PC 2 against PC 1.';
   const unm = ['pc1', 'pc2'].some(pc => !monitorsOf(pc).measured);
-  svg.innerHTML = g + `<text x="${W - 8}" y="${H - 5}" text-anchor="end" font-size="12" fill="var(--muted)">${note}${unm ? ' · dashed: not measured yet' : ''}</text>`;
+  svg.innerHTML = g;
+  $('#arrNote').innerHTML = note + (unm ? ' &nbsp;·&nbsp; Dashed outline: not measured yet.' : '');
   $('#arrInfo').textContent = S.general.arrangement ? `PC 2 at ${off.x}, ${off.y} px` : 'default: PC 2 right of PC 1';
 }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c])); }
