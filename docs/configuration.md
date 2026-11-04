@@ -34,8 +34,7 @@ What does differ between PCs, and what the settings are for:
 | Crossing a screen takes the same hand movement on every PC, so a big or high-resolution screen feels fast and coarse | measured screen size, plus `speed_x` / `speed_y` per PC |
 | Screens of different shape (16:9, 16:10, 21:9, portrait) give different horizontal and vertical speeds | measured monitors (or `aspect` if not measured) |
 | Two monitors of different size on one PC leave "holes" in the desktop that the pointer cannot enter | measured monitors: the box keeps its pointer inside the real screens |
-| Which side PC 2 is on | `layout` |
-| Screens mounted at different heights | `y_offset` / `x_offset` per PC |
+| Where PC 2's screens are on the desk, and where the pointer may cross | `arrangement` (drag PC 2 on the settings page) |
 | Windows and macOS do not apply pointer acceleration to absolute devices | `accel` per PC (done in the firmware) |
 | Games, Blender and remote-desktop tools that capture the mouse need relative movement | relative mode hotkey |
 
@@ -101,6 +100,26 @@ other display once; the whole-desktop size is still measured automatically.
 
 Re-measure (Win+F9) after you add, remove or rearrange monitors on a PC.
 
+## Arranging the two PCs
+
+The settings page arranges the two PCs the way the OS display settings arrange monitors: all monitors of both PCs
+are drawn in one picture, in pixels, and you **drag PC 2** to where its screens stand next to PC 1's. While you
+drag, PC 2 snaps against PC 1's monitor edges (and to top, bottom or centre alignment when it is close), and it can
+never overlap PC 1. The quick buttons *left / right / above / below* place PC 2 against PC 1's outer edge as a
+starting point.
+
+**The pointer crosses only where a monitor of PC 1 and a monitor of PC 2 touch** (drawn blue). Everywhere else the
+edge holds the pointer, exactly like the free edges between two monitors of different size on one PC. So with a
+tall PC 1 screen next to a short PC 2 screen, the part of PC 1's edge that has no screen beside it does not switch,
+and you can place PC 2 lower or higher to choose which part does. Several touching places are possible, for example
+when PC 2's two monitors sit against two different monitors of PC 1, or PC 2 is placed in a corner and touches
+both a side and the bottom. The pointer keeps its pixel position along the shared edge when it crosses.
+
+The position is stored as `arrangement = X,Y` in `[general]`: the top-left corner of PC 2's primary monitor in
+PC 1's desktop pixels. Without it, PC 2 sits to the right of PC 1, tops aligned. If PC 2's or PC 1's monitors
+change after a new measurement so that the stored position overlaps or no longer touches, the box (and the page)
+moves PC 2 to the nearest valid position.
+
 ## Several monitors on one PC
 
 The measurement records every monitor of a PC: its resolution, its position on the desktop and its scaling.
@@ -110,8 +129,8 @@ landscape screen next to a portrait one. The firmware uses this to:
 - keep its pointer inside the real monitors (the empty corners of the combined desktop cannot be entered, just as
   with a normal mouse),
 - keep the speed the same in pixels on every monitor, also when they use different scaling,
-- switch PCs only at an outer edge that really has a monitor on the `layout` side, and carry the pointer over
-  at the same height (or position along the edge) on the monitor it enters.
+- move between the PC's own monitors only where the OS lets the pointer cross (where they touch), and switch to
+  the other PC only where a monitor touches one of the other PC's monitors (see above).
 
 The settings page draws each PC's monitors in their real arrangement next to the other PC's.
 
@@ -141,7 +160,7 @@ key = value      # comment after a value
 
 | Key | Values | Default | Meaning |
 |---|---|---|---|
-| `layout` | `right`, `left`, `above`, `below` | `right` | Where PC 2's screen is, seen from PC 1 |
+| `arrangement` | `X,Y` (pixels) or empty | empty | Position of PC 2's desktop in PC 1's pixels, set by dragging on the settings page; empty means right of PC 1, tops aligned |
 | `edge_switch` | on / off | `on` | Switch by pushing the pointer past the edge |
 | `edge_delay_ms` | 0 - 1000 | `0` | Pointer must stay at the edge this long before switching (stops accidental switches) |
 | `edge_corner_block` | on / off | `on` | No switch while the pointer is in a screen corner (avoids clashes with hot corners / close buttons) |
@@ -187,8 +206,6 @@ A hotkey with no modifier (for example `SCROLLLOCK`) is allowed; pick a key you 
 | `speed_x` | 0.25 - 4.0 | `1.0` | Horizontal speed |
 | `speed_y` | 0.25 - 4.0 | `1.0` | Vertical speed (normally equal to `speed_x`) |
 | `accel` | `off`, `low`, `medium`, `high` | `medium` | Pointer acceleration curve |
-| `y_offset` | -50 - 50 (% of screen height) | `0` | Shifts where the pointer appears after crossing the edge (for `layout = left` / `right`); positive moves it down |
-| `x_offset` | -50 - 50 (% of screen width) | `0` | The same for `layout = above` / `below`; positive moves it right |
 | `os` | `windows`, `mac`, `linux` | `windows` | Used by the `open_config` and `measure` hotkeys |
 | `kbd_layout` | `us`, `de`, `at`, `ch`, `fr`, `uk`, `it`, `es` | `us` | The keyboard layout set in that PC's OS, so typed commands come out right |
 | `monitors` | written by the box | empty | Measured monitors, see below. Delete the line to forget a measurement |
@@ -207,14 +224,14 @@ monitors = 2560x1600+0+0@1.5, 3440x1440+2560-300@1
 inside the measured monitors, and converts it to the 0 - 32767 range of that PC's whole desktop. `base` is chosen
 so that with speed 1.0 an 800 DPI mouse moves about as fast as on a 1080p screen without acceleration,
 on every monitor. Without a measurement it uses `aspect` and assumes one 1920-pixel-wide screen.
-When the pointer crosses into the other PC, its position along the shared edge is carried over as a fraction
-of the monitor it leaves and shifted by the target PC's `y_offset` (or `x_offset`).
+When the pointer crosses into the other PC, it keeps its position along the shared edge in the common pixel space
+of `arrangement`.
 
 ## Example
 
 ```
 [general]
-layout = right
+arrangement = 2560,-120
 edge_delay_ms = 150
 
 [hotkeys]
@@ -232,7 +249,6 @@ monitors = 2560x1600+0+0@1.5
 name = Desktop
 speed_x = 1.3
 speed_y = 1.3
-y_offset = -10
 kbd_layout = de
 monitors = 3440x1440+0+0@1, 1440x2560+3440-560@1
 ```

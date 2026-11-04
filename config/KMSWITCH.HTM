@@ -56,7 +56,9 @@
                          border-radius: 50%; background: #fff; transition: left .15s; }
   .switch input:checked { background: var(--accent); }
   .switch input:checked::after { left: 16px; }
-  #screens { width: 100%; height: 300px; display: block; }
+  #screens { width: 100%; height: 320px; display: block; user-select: none; }
+  #screens .drag { cursor: grab; }
+  #screens.dragging .drag { cursor: grabbing; }
   .pcs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .pc h2 { display: flex; align-items: center; gap: 8px; }
   .pc h2 .pill { margin-left: auto; }
@@ -118,18 +120,20 @@
 <main>
   <section class="card wide">
     <h2>Screens</h2>
-    <p class="hint">Where PC 2 is, seen from PC 1. Each PC is drawn with its own monitors as measured (or with the
-      chosen shape until it is measured). The blue line is where the pointer crosses over.</p>
+    <p class="hint">Arrange the two PCs like monitors in your OS display settings: <b>drag PC 2</b> to where its
+      screens are on your desk. It snaps to PC 1's edges. The pointer crosses only where the screens touch
+      (<span style="color:var(--accent);font-weight:600">blue</span>); everywhere else the edge stops it, exactly like
+      between two monitors of one PC. Each PC is drawn with its real monitors as measured.</p>
     <div class="row" style="grid-template-columns:150px auto 1fr auto">
-      <label class="k">PC 2 is</label>
-      <div class="seg" id="layoutSeg">
+      <label class="k">Quick place PC 2</label>
+      <div class="seg" id="presetSeg">
         <button data-v="left">left</button><button data-v="right">right</button>
         <button data-v="above">above</button><button data-v="below">below</button>
       </div>
-      <span></span>
+      <span class="hint" style="margin:0" id="arrInfo"></span>
       <button id="btnMeasure" class="device-only" title="The box switches to each PC for a few seconds and measures its monitors">Measure screens</button>
     </div>
-    <svg id="screens" viewBox="0 0 1000 300" aria-label="Screen arrangement"></svg>
+    <svg id="screens" viewBox="0 0 1000 300" aria-label="Screen arrangement" style="touch-action:none"></svg>
   </section>
 
   <div class="pcs wide" id="pcs"></div>
@@ -196,12 +200,12 @@
 'use strict';
 // ------------------------------------------------------------------ model
 const DEFAULTS = {
-  general: { layout: 'right', edge_switch: true, edge_delay_ms: 0, edge_corner_block: true, start_on: 'pc1',
+  general: { arrangement: '', edge_switch: true, edge_delay_ms: 0, edge_corner_block: true, start_on: 'pc1',
              usb_network: true, auto_measure: true, config_ui: true },
   hotkeys: { switch: 'WIN+F12', relative_mode: 'WIN+F11', speed_up: 'WIN+SHIFT+UP', speed_down: 'WIN+SHIFT+DOWN',
              speed_reset: 'WIN+SHIFT+HOME', open_config: 'WIN+F10', measure: 'WIN+F9' },
-  pc1: { name: 'PC 1', speed_x: 1.0, speed_y: 1.0, accel: 'medium', y_offset: 0, x_offset: 0, os: 'windows', kbd_layout: 'us', monitors: '', aspect: '16:9' },
-  pc2: { name: 'PC 2', speed_x: 1.0, speed_y: 1.0, accel: 'medium', y_offset: 0, x_offset: 0, os: 'windows', kbd_layout: 'us', monitors: '', aspect: '16:9' },
+  pc1: { name: 'PC 1', speed_x: 1.0, speed_y: 1.0, accel: 'medium', os: 'windows', kbd_layout: 'us', monitors: '', aspect: '16:9' },
+  pc2: { name: 'PC 2', speed_x: 1.0, speed_y: 1.0, accel: 'medium', os: 'windows', kbd_layout: 'us', monitors: '', aspect: '16:9' },
 };
 const HOTKEYS = [
   ['switch', 'Switch PC', 'to the other PC'],
@@ -305,7 +309,7 @@ function parse(text) {
     if (val === null || (val === '' && k !== 'monitors')) { problems.push(sec + '.' + k); return; }
     if (k === 'aspect' && !validAspect(val)) { problems.push(sec + '.' + k); return; }
     if (k === 'monitors' && val && !parseMonitors(val).length) { problems.push(sec + '.' + k); return; }
-    if (k === 'layout' && !['left', 'right', 'above', 'below'].includes(val.toLowerCase())) { problems.push(sec + '.' + k); return; }
+    if (k === 'arrangement' && val && !/^-?\d+\s*,\s*-?\d+$/.test(val)) { problems.push(sec + '.' + k); return; }
     s[sec][k] = typeof val === 'string' && !['name', 'monitors'].includes(k) && sec !== 'hotkeys' ? val.toLowerCase() : val;
   });
   sanitize(s);
@@ -313,9 +317,9 @@ function parse(text) {
 }
 function sanitize(s) {
   s.general.edge_delay_ms = Math.round(clamp(s.general.edge_delay_ms, 0, 1000));
+  if (s.general.arrangement) s.general.arrangement = s.general.arrangement.split(',').map(v => Math.round(+v)).join(',');
   for (const pc of ['pc1', 'pc2']) {
     for (const k of ['speed_x', 'speed_y']) s[pc][k] = Math.round(clamp(s[pc][k], 0.25, 4) * 100) / 100;
-    for (const k of ['y_offset', 'x_offset']) s[pc][k] = Math.round(clamp(s[pc][k], -50, 50));
     if (!['off', 'low', 'medium', 'high'].includes(s[pc].accel)) s[pc].accel = 'medium';
     if (!['windows', 'mac', 'linux'].includes(s[pc].os)) s[pc].os = 'windows';
     if (!(s[pc].kbd_layout in LAYOUTS)) s[pc].kbd_layout = 'us';
@@ -323,7 +327,7 @@ function sanitize(s) {
   }
 }
 const COMMENTS = {
-  'general.layout': "where PC 2's screen is, seen from PC 1: right | left | above | below",
+  'general.arrangement': "X,Y: where PC 2's desktop sits, in PC 1's pixels (drag on the settings page); empty = right of PC 1",
   'general.edge_switch': 'switch by pushing the pointer past the screen edge',
   'general.edge_delay_ms': '0-1000: stay at the edge this long before switching',
   'general.edge_corner_block': 'no switch while the pointer is in a screen corner',
@@ -334,8 +338,6 @@ const COMMENTS = {
   'hotkeys.relative_mode': 'relative mouse for games; pauses edge switching',
   'hotkeys.measure': 'measure the screens of both PCs (LEDs blink)',
   'pc.speed_x': '0.25-4.0', 'pc.speed_y': '0.25-4.0', 'pc.accel': 'off | low | medium | high',
-  'pc.y_offset': '-50..50 % of screen height (layout right / left)',
-  'pc.x_offset': '-50..50 % of screen width (layout above / below)',
   'pc.os': 'windows | mac | linux (for typed commands)',
   'pc.kbd_layout': 'us de at ch fr uk it es (for typed commands)',
   'pc.monitors': 'written by the box when it measures: WxH+X+Y@scale, ...',
@@ -400,8 +402,6 @@ function pcCard(pc, color) {
       <div class="slider"><input type="range" min="0.25" max="4" step="0.05" data-k="${pc}.speed_y"><output data-o="${pc}.speed_y"></output></div></div>
     <div class="row"><label class="k">Acceleration</label>
       <div class="seg" data-seg="${pc}.accel"><button data-v="off">off</button><button data-v="low">low</button><button data-v="medium">medium</button><button data-v="high">high</button></div></div>
-    <div class="row"><label class="k" data-offlabel="${pc}">Vertical offset</label>
-      <div class="slider"><input type="range" min="-50" max="50" step="1" data-off="${pc}"><output data-offo="${pc}"></output></div></div>
     <div class="row"><label class="k">Operating system</label>
       <select data-k="${pc}.os"><option value="windows">Windows</option><option value="mac">macOS</option><option value="linux">Linux</option></select></div>
     <div class="row"><label class="k">Keyboard layout</label><select data-k="${pc}.kbd_layout">${lay}</select></div>
@@ -445,12 +445,11 @@ function build() {
     const b = e.target.closest('button'); if (!b) return;
     const [sec, k] = seg.dataset.seg.split('.'); S[sec][k] = b.dataset.v; changed();
   }));
-  $('#layoutSeg').addEventListener('click', e => {
-    const b = e.target.closest('button'); if (!b) return; S.general.layout = b.dataset.v; changed();
+  $('#presetSeg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const o = presetOffset(b.dataset.v); S.general.arrangement = o.x + ',' + o.y; changed();
   });
-  $$('[data-off]').forEach(el => el.addEventListener('input', () => {
-    const pc = el.dataset.off; S[pc][vertical() ? 'y_offset' : 'x_offset'] = parseInt(el.value, 10); changed();
-  }));
+  initDrag();
   $$('#hk tr').forEach(tr => {
     const upd = () => {
       const key = $('select', tr).value;
@@ -462,7 +461,6 @@ function build() {
     $('select', tr).addEventListener('change', upd);
   });
 }
-function vertical() { return S.general.layout === 'left' || S.general.layout === 'right'; }
 function connected(pc) { return !DEVICE || !status || !!(status.pcs && status.pcs[pc] && status.pcs[pc].connected); }
 
 // ------------------------------------------------------------------ render
@@ -502,13 +500,8 @@ function render() {
     const [sec, k] = seg.dataset.seg.split('.');
     $$('button', seg).forEach(b => b.classList.toggle('on', b.dataset.v === S[sec][k]));
   });
-  $$('#layoutSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === S.general.layout));
-  $$('[data-off]').forEach(el => {
-    const pc = el.dataset.off, k = vertical() ? 'y_offset' : 'x_offset';
-    el.value = S[pc][k];
-    $(`[data-offo="${pc}"]`).textContent = (S[pc][k] > 0 ? '+' : '') + S[pc][k] + ' %';
-    $(`[data-offlabel="${pc}"]`).textContent = vertical() ? 'Vertical offset' : 'Horizontal offset';
-  });
+  const side = sideOf();
+  $$('#presetSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === side));
   const used = {};
   Object.entries(S.hotkeys).forEach(([k, v]) => { if (v !== 'none') (used[v] = used[v] || []).push(k); });
   $$('#hk tr').forEach(tr => {
@@ -527,67 +520,144 @@ function render() {
   $('#out').textContent = write(S);
 }
 
-function drawScreens() {
-  const svg = $('#screens'), W = 1000, H = 300, pad = 16, gap = 0;
-  const lay = S.general.layout, horiz = lay === 'left' || lay === 'right';
-  const box = pc => {
-    const { list, measured } = monitorsOf(pc);
-    const x0 = Math.min(...list.map(m => m.x)), y0 = Math.min(...list.map(m => m.y));
-    const x1 = Math.max(...list.map(m => m.x + m.w)), y1 = Math.max(...list.map(m => m.y + m.h));
-    return { pc, list, measured, x0, y0, w: x1 - x0, h: y1 - y0 };
-  };
-  const p1 = box('pc1'), p2 = box('pc2');
-  const first = (lay === 'right' || lay === 'below') ? p1 : p2, second = first === p1 ? p2 : p1;
-  // each PC is scaled to the same height (side by side) or width (stacked), like the box treats a crossing
-  const L = horiz ? H - 2 * pad - 30 : W;   // common height or width in px
-  const sc = b => horiz ? L / b.h : 230 / b.w;
-  let k = 1;
-  if (horiz) { const tw = first.w * sc(first) + second.w * sc(second) + gap; k = Math.min(1, (W - 2 * pad) / tw); }
-  else { const th = first.h * sc(first) + second.h * sc(second) + gap; k = Math.min(1, (H - 2 * pad - 20) / th); }
-  const off = (b) => (horiz ? S[b.pc].y_offset : S[b.pc].x_offset) / 100;
-  const place = [];
-  if (horiz) {
-    const w1 = first.w * sc(first) * k, w2 = second.w * sc(second) * k, h = L * k;
-    const x = (W - w1 - w2 - gap) / 2, y = (H - 20 - h) / 2;
-    place.push({ b: first, X: x, Y: y + off(first) * h, s: sc(first) * k });
-    place.push({ b: second, X: x + w1 + gap, Y: y + off(second) * h, s: sc(second) * k });
-  } else {
-    const h1 = first.h * sc(first) * k, h2 = second.h * sc(second) * k, w = 230 * k;
-    const x = (W - w) / 2, y = (H - 20 - h1 - h2 - gap) / 2;
-    place.push({ b: first, X: x + off(first) * w, Y: y, s: sc(first) * k });
-    place.push({ b: second, X: x + off(second) * w, Y: y + h1 + gap, s: sc(second) * k });
-  }
-  const col = pc => pc === 'pc1' ? 'var(--pc1)' : 'var(--pc2)';
-  let g = '';
-  for (const { b, X, Y, s } of place) {
-    const on = connected(b.pc), c = on ? col(b.pc) : 'var(--off)';
-    b.list.forEach((m, i) => {
-      const x = X + (m.x - b.x0) * s, y = Y + (m.y - b.y0) * s, w = m.w * s, h = m.h * s;
-      g += `<rect x="${x + 2}" y="${y + 2}" width="${Math.max(0, w - 4)}" height="${Math.max(0, h - 4)}" rx="5"
-              fill="${c}" fill-opacity="${on ? 0.12 : 0.06}" stroke="${c}" stroke-width="2.5" ${b.measured && on ? '' : 'stroke-dasharray="7 5"'}/>`;
-      if (b.list.length > 1 && w > 70 && h > 34) g += `<text x="${x + w / 2}" y="${y + h - 10}" text-anchor="middle" font-size="12" fill="var(--muted)">${m.w}×${m.h}</text>`;
-    });
-    const cx = X + b.w * s / 2, cy = Y + b.h * s / 2;
-    const sub = !on ? 'not connected' : b.measured ? (b.list.length > 1 ? b.list.length + ' monitors' : `${b.list[0].w}×${b.list[0].h} · ${shapeName(b.list[0].w, b.list[0].h)}`)
-                    : `${S[b.pc].aspect} · not measured`;
-    g += `<text x="${cx}" y="${cy - 4}" text-anchor="middle" font-size="17" font-weight="600" fill="${c}">${esc(S[b.pc].name || b.pc)}</text>
-          <text x="${cx}" y="${cy + 16}" text-anchor="middle" font-size="12.5" fill="var(--muted)">${sub} · speed ${(+S[b.pc].speed_x).toFixed(2)}×</text>`;
-  }
-  // shared edge
-  const [A, B] = place;
-  if (S.general.edge_switch && connected('pc1') && connected('pc2')) {
-    if (horiz) {
-      const y1 = Math.max(A.Y, B.Y) + 3, y2 = Math.min(A.Y + A.b.h * A.s, B.Y + B.b.h * B.s) - 3;
-      if (y2 > y1) g += `<line x1="${B.X}" y1="${y1}" x2="${B.X}" y2="${y2}" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>`;
-    } else {
-      const x1 = Math.max(A.X, B.X) + 3, x2 = Math.min(A.X + A.b.w * A.s, B.X + B.b.w * B.s) - 3;
-      if (x2 > x1) g += `<line x1="${x1}" y1="${B.Y}" x2="${x2}" y2="${B.Y}" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>`;
+// ------------------------------------------------------------------ arrangement (shared pixel space, PC 1 origin)
+const MIN_TOUCH = 32;            // px of shared edge needed for a valid placement
+function rectsOf(pc, off) {
+  return monitorsOf(pc).list.map(m => ({ x: m.x + (off ? off.x : 0), y: m.y + (off ? off.y : 0), w: m.w, h: m.h, m }));
+}
+function bbox(rs) {
+  const x0 = Math.min(...rs.map(r => r.x)), y0 = Math.min(...rs.map(r => r.y));
+  return { x: x0, y: y0, w: Math.max(...rs.map(r => r.x + r.w)) - x0, h: Math.max(...rs.map(r => r.y + r.h)) - y0 };
+}
+function presetOffset(side) {
+  const A = bbox(rectsOf('pc1')), B = bbox(rectsOf('pc2'));
+  if (side === 'left') return { x: A.x - B.w - B.x, y: A.y - B.y };
+  if (side === 'above') return { x: A.x - B.x, y: A.y - B.h - B.y };
+  if (side === 'below') return { x: A.x - B.x, y: A.y + A.h - B.y };
+  return { x: A.x + A.w - B.x, y: A.y - B.y };
+}
+function arrangement() {
+  const a = S.general.arrangement;
+  if (a) { const [x, y] = a.split(',').map(Number); return { x, y }; }
+  return presetOffset('right');
+}
+function overlapArea(r, q) {
+  return Math.max(0, Math.min(r.x + r.w, q.x + q.w) - Math.max(r.x, q.x)) * Math.max(0, Math.min(r.y + r.h, q.y + q.h) - Math.max(r.y, q.y));
+}
+// touching edge pieces between PC 1 and PC 2 (where the pointer may cross)
+function contacts(off) {
+  const A = rectsOf('pc1'), B = rectsOf('pc2', off), out = [];
+  for (const a of A) for (const b of B) {
+    for (const [x, ok] of [[a.x + a.w, b.x === a.x + a.w], [a.x, b.x + b.w === a.x]]) if (ok) {
+      const y1 = Math.max(a.y, b.y), y2 = Math.min(a.y + a.h, b.y + b.h);
+      if (y2 > y1) out.push({ x1: x, y1, x2: x, y2 });
+    }
+    for (const [y, ok] of [[a.y + a.h, b.y === a.y + a.h], [a.y, b.y + b.h === a.y]]) if (ok) {
+      const x1 = Math.max(a.x, b.x), x2 = Math.min(a.x + a.w, b.x + b.w);
+      if (x2 > x1) out.push({ x1, y1: y, x2, y2: y });
     }
   }
+  return out;
+}
+// nearest valid placement to a wished offset: PC 2 touches PC 1 along an edge and never overlaps it
+function snap(want) {
+  const A = rectsOf('pc1'), B0 = rectsOf('pc2');
+  const ok = off => B0.every(b => A.every(a => overlapArea(a, { x: b.x + off.x, y: b.y + off.y, w: b.w, h: b.h }) === 0));
+  let best = null;
+  const tryOff = (o, al) => {
+    o = { x: Math.round(o.x), y: Math.round(o.y) };
+    if (!ok(o)) return;
+    const d = Math.hypot(o.x - want.x, o.y - want.y);
+    if (!best || d < best.d) best = { o, d, al };
+  };
+  for (const a of A) for (const b of B0) {
+    // b to the right / left of a: x fixed, y free within the touching range
+    for (const x of [a.x + a.w - b.x, a.x - b.w - b.x]) {
+      const lo = a.y - b.h + MIN_TOUCH - b.y, hi = a.y + a.h - MIN_TOUCH - b.y;
+      if (lo > hi) continue;
+      let y = clamp(want.y, lo, hi);
+      for (const t of [a.y - b.y, a.y + a.h - b.h - b.y, a.y + a.h / 2 - b.h / 2 - b.y])     // align tops, bottoms, centres
+        if (Math.abs(y - t) < a.h * 0.04 && t >= lo && t <= hi) y = t;
+      tryOff({ x, y });
+    }
+    for (const y of [a.y + a.h - b.y, a.y - b.h - b.y]) {
+      const lo = a.x - b.w + MIN_TOUCH - b.x, hi = a.x + a.w - MIN_TOUCH - b.x;
+      if (lo > hi) continue;
+      let x = clamp(want.x, lo, hi);
+      for (const t of [a.x - b.x, a.x + a.w - b.w - b.x, a.x + a.w / 2 - b.w / 2 - b.x])
+        if (Math.abs(x - t) < a.w * 0.04 && t >= lo && t <= hi) x = t;
+      tryOff({ x, y });
+    }
+  }
+  return best ? best.o : presetOffset('right');
+}
+function sideOf() {
+  const c = contacts(arrangement());
+  if (!c.length) return '';
+  const A = rectsOf('pc1'), e = c[0];
+  if (e.x1 === e.x2) return A.some(a => a.x + a.w === e.x1 && e.y1 >= a.y && e.y2 <= a.y + a.h) ? 'right' : 'left';
+  return A.some(a => a.y + a.h === e.y1 && e.x1 >= a.x && e.x2 <= a.x + a.w) ? 'below' : 'above';
+}
+let view = null, drag = null;
+function initDrag() {
+  const svg = $('#screens');
+  const pt = e => { const r = svg.getBoundingClientRect(); return { x: (e.clientX - r.left) * 1000 / r.width, y: (e.clientY - r.top) * 320 / r.height }; };
+  svg.addEventListener('pointerdown', e => {
+    if (!e.target.closest('.drag') || !view) return;
+    drag = { p: pt(e), off: arrangement(), k: view.k };
+    svg.setPointerCapture(e.pointerId); svg.classList.add('dragging');
+  });
+  svg.addEventListener('pointermove', e => {
+    if (!drag) return;
+    const p = pt(e);
+    const want = { x: drag.off.x + (p.x - drag.p.x) / drag.k, y: drag.off.y + (p.y - drag.p.y) / drag.k };
+    const o = snap(want);
+    S.general.arrangement = o.x + ',' + o.y;
+    drawScreens(drag.k);
+  });
+  const end = () => { if (!drag) return; drag = null; svg.classList.remove('dragging'); changed(); };
+  svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', end);
+}
+function drawScreens(fixedK) {
+  const svg = $('#screens'), W = 1000, H = 320, pad = 24;
+  const off = arrangement();
+  const A = rectsOf('pc1'), B = rectsOf('pc2', off);
+  const all = bbox(A.concat(B));
+  const k = fixedK || Math.min((W - 2 * pad) / all.w, (H - 2 * pad - 18) / all.h);
+  // keep the drawing still while dragging: centre on PC 1
+  const a1 = bbox(A);
+  const ox = fixedK && view ? view.ox : W / 2 - (all.x + all.w / 2) * k;
+  const oy = fixedK && view ? view.oy : (H - 18) / 2 - (all.y + all.h / 2) * k;
+  view = { k, ox, oy };
+  void a1;
+  const X = x => ox + x * k, Y = y => oy + y * k;
+  const col = pc => pc === 'pc1' ? 'var(--pc1)' : 'var(--pc2)';
+  let g = '';
+  for (const [pc, rs] of [['pc1', A], ['pc2', B]]) {
+    const on = connected(pc), c = on ? col(pc) : 'var(--off)', measured = monitorsOf(pc).measured;
+    g += `<g class="${pc === 'pc2' ? 'drag' : ''}">`;
+    rs.forEach(r => {
+      g += `<rect x="${X(r.x) + 1.5}" y="${Y(r.y) + 1.5}" width="${Math.max(0, r.w * k - 3)}" height="${Math.max(0, r.h * k - 3)}" rx="4"
+              fill="${c}" fill-opacity="${on ? 0.13 : 0.06}" stroke="${c}" stroke-width="2.5" ${measured && on ? '' : 'stroke-dasharray="7 5"'}/>`;
+      if (rs.length > 1 && r.w * k > 70 && r.h * k > 40)
+        g += `<text x="${X(r.x + r.w / 2)}" y="${Y(r.y + r.h) - 9}" text-anchor="middle" font-size="11.5" fill="var(--muted)">${r.w}×${r.h}</text>`;
+    });
+    const big = rs.reduce((p, r) => r.w * r.h > p.w * p.h ? r : p), cx = X(big.x + big.w / 2), cy = Y(big.y + big.h / 2) - (rs.length > 1 ? 6 : 0);
+    const first = rs[0].m;
+    const sub = !on ? 'not connected' : measured ? (rs.length > 1 ? rs.length + ' monitors' : `${first.w}×${first.h} · ${shapeName(first.w, first.h)}`)
+                    : `${S[pc].aspect} · not measured`;
+    g += `<text x="${cx}" y="${cy - 3}" text-anchor="middle" font-size="16" font-weight="600" fill="${c}">${esc(S[pc].name || pc)}</text>
+          <text x="${cx}" y="${cy + 15}" text-anchor="middle" font-size="12" fill="var(--muted)">${sub}</text></g>`;
+  }
+  const cs = contacts(off);
+  if (S.general.edge_switch) cs.forEach(s =>
+    g += `<line x1="${X(s.x1)}" y1="${Y(s.y1)}" x2="${X(s.x2)}" y2="${Y(s.y2)}" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>`);
   const note = !S.general.edge_switch ? 'edge switching is off: use the hotkey' :
-    !(connected('pc1') && connected('pc2')) ? 'one PC is not connected' : 'blue line: the pointer switches PC here';
-  svg.innerHTML = g + `<text x="${W - pad}" y="${H - 6}" text-anchor="end" font-size="12" fill="var(--muted)">${note}${
-    place.some(p => !p.b.measured) ? ' · dashed: not measured yet' : ''}</text>`;
+    !(connected('pc1') && connected('pc2')) ? 'one PC is not connected' :
+    cs.length ? 'blue: the pointer crosses here · elsewhere the edge stops it' : 'the PCs do not touch: drag PC 2 against PC 1';
+  const unm = ['pc1', 'pc2'].some(pc => !monitorsOf(pc).measured);
+  svg.innerHTML = g + `<text x="${W - 8}" y="${H - 5}" text-anchor="end" font-size="12" fill="var(--muted)">${note}${unm ? ' · dashed: not measured yet' : ''}</text>`;
+  $('#arrInfo').textContent = S.general.arrangement ? `PC 2 at ${off.x}, ${off.y} px` : 'default: PC 2 right of PC 1';
 }
 function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c])); }
 

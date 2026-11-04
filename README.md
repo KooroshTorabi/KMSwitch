@@ -63,7 +63,7 @@ Both variants have the same features, the same GPIO map (so one firmware fits bo
 
 ## Configuration (optional)
 
-It works without any setup. To tune the mouse for different screens, change the hotkeys or add a relative mode for games, press **Win+F10**: the box opens its own settings page (`http://192.168.7.1`, served by the box over a private USB network link, any browser, nothing installed). Changes are saved on the box by themselves, the page shows live which PC is connected, and the box measures each PC's monitors automatically (LEDs blink for a few seconds while it switches over and measures), including several monitors of different shape on one PC.
+It works without any setup. To tune the mouse for different screens, change the hotkeys or add a relative mode for games, press **Win+F10**: the box opens its own settings page (`http://192.168.7.1`, served by the box over a private USB network link, any browser, nothing installed). You place PC 2 next to PC 1 by dragging, like monitors in the OS display settings, and the pointer crosses only where the screens touch. Changes are saved on the box by themselves, the page shows live which PC is connected, and the box measures each PC's monitors automatically (LEDs blink for a few seconds while it switches over and measures), including several monitors of different shape on one PC.
 Where the USB network is not allowed, the same page works offline from the microSD card ([`config/KMSWITCH.HTM`](config/KMSWITCH.HTM)) together with the settings file [`config/KMSWITCH.TXT`](config/KMSWITCH.TXT).
 Full reference: [docs/configuration.md](docs/configuration.md); page-to-box protocol: [docs/web-api.md](docs/web-api.md).
 
