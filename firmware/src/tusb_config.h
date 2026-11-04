@@ -26,4 +26,6 @@
 #define CFG_TUD_MSC 1                 // the shared microSD drive
 #define CFG_TUD_MSC_EP_BUFSIZE 512
 #define CFG_TUD_CDC 0
+#define CFG_TUD_ECM_RNDIS 1            // settings page: RNDIS (Windows) / CDC-ECM (macOS, Linux)
+#define CFG_TUD_NET_MTU 1514
 #define CFG_TUD_VENDOR 0

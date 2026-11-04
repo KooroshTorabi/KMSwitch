@@ -13,7 +13,7 @@ offline with Open / Save as before.
 
 | | |
 |---|---|
-| Classes | CDC-NCM (Windows 11, macOS, Linux, inbox drivers); RNDIS as a second configuration for Windows 10 |
+| Classes | RNDIS in configuration 1 (Windows 10 and 11, Linux) and CDC-ECM in configuration 2 (macOS, Linux); inbox drivers everywhere |
 | Addresses | box `192.168.7.1/24`; the box's DHCP server gives the PC `192.168.7.2`, **no gateway, no DNS server** |
 | Effect on the PC | a link-local network to the box only; normal networking and routes are untouched |
 | Off switch | `usb_network = off` in `[general]` |

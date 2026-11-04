@@ -16,6 +16,7 @@
 static FATFS fs;
 static int owner = 0;              // PC that sees the drive (the active PC)
 static bool box_busy;              // the box is about to write / writing: no PC sees the drive
+static bool exclusive;             // firmware update: the box uses the card, no PC sees the drive
 static uint32_t busy_since;
 static char *pending_text;         // file content waiting to be written
 static size_t pending_len;
@@ -112,7 +113,7 @@ void storage_set_owner(int pc) {
 }
 
 // ------------------------------------------------------------------ the drive for PC 1 (local)
-static bool d_ready(void) { return owner == 0 && !box_busy && sd_ready(); }
+static bool d_ready(void) { return owner == 0 && !box_busy && !exclusive && sd_ready(); }
 static uint32_t d_sectors(void) { return sd_sectors(); }
 static int32_t d_read(uint32_t lba, uint32_t off, void *buf, uint32_t n) {
     (void)off;
@@ -134,7 +135,7 @@ void storage_link_request(const uint8_t *p, size_t len) {
     memcpy(out, p, 4);
     uint8_t op = p[4];
     uint32_t lba = (uint32_t)p[5] | (uint32_t)p[6] << 8 | (uint32_t)p[7] << 16 | (uint32_t)p[8] << 24;
-    bool ready = owner == 1 && !box_busy && sd_ready();
+    bool ready = owner == 1 && !box_busy && !exclusive && sd_ready();
     int8_t st = -1;
     size_t n = 5;
     if (!ready) {
@@ -152,4 +153,93 @@ void storage_link_request(const uint8_t *p, size_t len) {
     }
     out[4] = (uint8_t)st;
     link_send(LM_MSC_RESP, out, n);
+}
+
+// ------------------------------------------------------------------ files used by firmware updates
+static FIL wf;
+static bool wf_open;
+static FIL rf;
+static char open_path[64];
+static bool ro;
+void storage_exclusive(bool on) {
+    if (on == exclusive) return;
+    exclusive = on;
+    if (on) {
+        mount();
+    } else {
+        if (ro) { f_close(&rf); ro = false; }
+        if (wf_open) { f_close(&wf); wf_open = false; }
+        f_unmount("");
+    }
+    port_media_changed();
+    link_send(LM_MSC_RESP, (uint8_t[]){0xFF, 0xFF, 0xFF, 0xFF, 1}, 5);
+}
+
+
+bool storage_file_create(const char *path) {
+    if (!exclusive && !mount()) return false;
+    f_mkdir("/.kmswitch");
+    f_mkdir("/.kmswitch/fw");
+    wf_open = f_open(&wf, path, FA_WRITE | FA_CREATE_ALWAYS) == FR_OK;
+    return wf_open;
+}
+bool storage_file_append(const void *d, size_t n) {
+    UINT w = 0;
+    return wf_open && f_write(&wf, d, (UINT)n, &w) == FR_OK && w == n;
+}
+bool storage_file_close(void) {
+    if (!wf_open) return false;
+    wf_open = false;
+    return f_close(&wf) == FR_OK;
+}
+
+bool storage_file_read(const char *path, uint32_t off, void *buf, size_t n, size_t *got) {
+    if (!ro || strcmp(open_path, path)) {
+        if (ro) f_close(&rf);
+        ro = f_open(&rf, path, FA_READ) == FR_OK;
+        if (!ro) return false;
+        snprintf(open_path, sizeof open_path, "%s", path);
+    }
+    UINT r = 0;
+    if (f_lseek(&rf, off) != FR_OK || f_read(&rf, buf, (UINT)n, &r) != FR_OK) return false;
+    *got = r;
+    return true;
+}
+
+uint32_t storage_file_size(const char *path) {
+    FILINFO fi;
+    return f_stat(path, &fi) == FR_OK ? (uint32_t)fi.fsize : 0;
+}
+
+bool storage_file_rename(const char *from, const char *to) {
+    f_unlink(to);
+    return f_rename(from, to) == FR_OK;
+}
+bool storage_file_delete(const char *path) { return f_unlink(path) == FR_OK; }
+
+// an update file the user copied to the root of the drive (way 2): its name, or false
+bool storage_find_update(char *name, size_t cap) {
+    if (!mount()) return false;
+    DIR d;
+    FILINFO fi;
+    bool found = false;
+    if (f_findfirst(&d, &fi, "/", "*.kmsfw") == FR_OK && fi.fname[0]) {
+        snprintf(name, cap, "/%s", fi.fname);
+        found = true;
+    }
+    f_closedir(&d);
+    if (!exclusive) f_unmount("");
+    return found;
+}
+
+void storage_log(const char *line) {
+    if (!exclusive && !mount()) return;
+    FIL f;
+    if (f_open(&f, "KMSWITCH.LOG", FA_WRITE | FA_OPEN_APPEND) == FR_OK) {
+        UINT w;
+        f_write(&f, line, (UINT)strlen(line), &w);
+        f_write(&f, "\r\n", 2, &w);
+        f_close(&f);
+    }
+    if (!exclusive) f_unmount("");
 }

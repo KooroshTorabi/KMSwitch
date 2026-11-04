@@ -62,14 +62,14 @@ PC's MCU straight into BOOTSEL, without the pin.
 |---|---|---|
 | `0x000000` | 256 B | RP2040 boot2 (flash setup, required by the ROM) |
 | `0x000100` | 32 KB - 256 B | kmswitch bootloader |
-| `0x008000` | 4 KB | boot state (two copies, each with a CRC) |
-| `0x009000` | 4 KB | reserved |
+| `0x008000` | 4 KB | boot state, copy 1 (with a CRC) |
+| `0x009000` | 4 KB | boot state, copy 2 (the newer valid copy wins; a write always replaces the older one) |
 | `0x00A000` | 1000 KB | slot 0 (application) |
 | `0x104000` | 1000 KB | slot 1 (application) |
 | `0x1FE000` | 8 KB | reserved |
 
-The application is linked to run from either slot (position-independent startup that sets the vector table from
-its own load address), so an update is written to whichever slot is not running.
+Every application is built twice, linked for slot 0 and for slot 1, and the bundle carries both builds; an update
+writes the build for whichever slot is not running. The vector table sits 256 bytes into the slot.
 
 ### Boot and roll-back
 
@@ -83,25 +83,34 @@ The boot state holds the active slot, a pending slot and a try counter.
 4. If it crashes, hangs (watchdog) or never confirms, the next boot finds the counter at zero and goes back to the
    previous slot. A power cut at any point leaves either the old or the new firmware bootable.
 
+The bootloader also checks the image's SHA-256 (stored in the boot state at install time) before it jumps, and
+arms the watchdog (8 s) for the trial start; the new firmware turns it off when it confirms.
+
 MCU-A and MCU-B check each other's firmware version over the UART at start-up. If they differ (for example the
-power failed between the two parts of an update), MCU-A re-sends MCU-B's part from the copy it keeps on the
-microSD card (`/.kmswitch/fw/`), so the pair always ends up matching.
+power failed between the two parts of an update), MCU-A re-sends MCU-B's part from the copy of the last installed
+bundle it keeps on the microSD card (`/.kmswitch/fw/current.kmsfw`), so the pair always ends up matching.
+An update bundle is received onto the card first (`/.kmswitch/fw/incoming.kmsfw`), so the drive is not shown to
+the PCs while an update runs.
 
 ### Update bundle (`.kmsfw`)
 
+A 4096-byte header (little-endian), then the images, each padded to 4 KB:
+
 ```
-magic      "KMSFW1\0\0"                        8 bytes
-board      "A" or "B"                          1 byte, padded to 4
-version    major, minor, patch                 3 x uint16
-flags      bit 0: allow downgrade              uint32
-image_a    offset, length, SHA-256             MCU-A application (slot image)
-image_b    offset, length, SHA-256             MCU-B application (slot image)
-signature  Ed25519 over everything above and both images
+0     magic      "KMSFW1\0\0"                                     8 bytes
+8     board      "A" or "B", padded to 4                          4 bytes
+12    version    major, minor, patch, 0                           4 x uint16
+20    flags      bit 0: allow downgrade                           uint32
+24    count      number of images (4)                             uint32
+28    images     4 x { role u8 (0 = MCU-A, 1 = MCU-B), slot u8, 0 u16, offset u32, length u32, SHA-256 }
+...   zero padding
+4032  signature  Ed25519 over bytes 0-4031 (they hold every image's SHA-256, so the signature covers the images)
 ```
 
-The release signing key is kept offline by the maintainer; the bootloader and the firmware contain only the
-public key. Unsigned builds for development run only after a developer bootloader has been flashed through
-BOOTSEL, which the user does deliberately and which shows as `dev` in the settings page.
+`firmware/tools/kmsfw.py` makes the key pair (`keygen`), the bundle (`pack`) and the recovery `.uf2` files (`uf2`).
+The release signing key is kept offline by the maintainer; the firmware contains only the public key
+(`firmware/keys/release.pub`, compiled in). A build without that file is a development build (`dev` on the
+settings page) and accepts no update bundles; flash it through BOOTSEL.
 
 A bundle for the wrong board, with a bad hash or a bad signature is rejected before anything is written. An
 older version is refused unless its `allow downgrade` flag is set (used to publish a deliberate roll-back).

@@ -1,5 +1,6 @@
 // MCU-B: the USB device towards PC 2. Everything it sends comes from MCU-A over the isolated UART;
 // the drive is the microSD card on MCU-A, reached block by block over the same link.
+#include <stdio.h>
 #include <string.h>
 #include "board.h"
 #include "hardware/clocks.h"
@@ -10,6 +11,10 @@
 #include "pico/bootrom.h"
 #include "pico/stdlib.h"
 #include "tusb.h"
+#include "net/http.h"
+#include "net/net.h"
+#include "usb_desc.h"
+#include "bootctl.h"
 
 static uint32_t now_ms(void) { return to_ms_since_boot(get_absolute_time()); }
 
@@ -92,10 +97,140 @@ static int32_t d_write(uint32_t lba, uint32_t off, const uint8_t *buf, uint32_t 
 }
 static const port_disk_t link_disk = {d_ready, d_sectors, d_read, d_write, NULL};
 
+// ------------------------------------------------------------------ settings page for PC 2
+// The page itself is served from MCU-B's flash; API requests go to MCU-A over the link.
+extern const uint8_t page_gz[];
+extern const size_t page_gz_len;
+static struct { int id; bool busy, got_head; uint32_t sent; http_resp_t r; uint8_t buf[HTTP_BODY_MAX]; size_t n; } px;
+
+static bool http_handler(const http_req_t *r, http_resp_t *out) {
+    if (strncmp(r->path, "/api/", 5)) {
+        *out = (http_resp_t){200, "text/html; charset=utf-8", page_gz, page_gz_len, true, true};
+        return true;
+    }
+    if (!link_alive() || px.busy) {
+        http_json(out, 503, "{\"error\":\"busy\"}");
+        return true;
+    }
+    px.busy = true; px.got_head = false; px.id = r->id; px.n = 0; px.sent = now_ms();
+    uint8_t m[LINK_MAX_PAYLOAD];
+    uint32_t id = (uint32_t)r->id;
+    memcpy(m, &id, 4);
+    size_t k = 5 + (size_t)snprintf((char *)m + 5, LINK_MAX_PAYLOAD - 5, "%s %s\n", r->method, r->path);
+    size_t off = 0;
+    do {
+        size_t c = r->len - off;
+        if (c > LINK_MAX_PAYLOAD - k) c = LINK_MAX_PAYLOAD - k;
+        memcpy(m + k, r->body + off, c);
+        off += c;
+        m[4] = off >= r->len ? 1 : 0;
+        link_send(LM_HTTP_REQ, m, k + c);
+        k = 5;
+    } while (off < r->len);
+    return false;   // answered when MCU-A replies
+}
+
+static void on_http_resp(const uint8_t *p, size_t n) {
+    uint32_t id;
+    if (n < 5 || !px.busy) return;
+    memcpy(&id, p, 4);
+    if ((int)id != px.id) return;
+    size_t k = 5;
+    if (p[4] & 2) {
+        if (n < 8) return;
+        static const char *ct[] = {"application/json", "text/plain; charset=utf-8", "text/html; charset=utf-8"};
+        px.r.status = p[5] | p[6] << 8;
+        px.r.ctype = ct[(p[7] & 0x7F) < 3 ? (p[7] & 0x7F) : 1];
+        px.r.gzip = p[7] & 0x80;
+        px.got_head = true;
+        k = 8;
+    }
+    size_t c = n - k;
+    if (px.n + c > sizeof px.buf) c = sizeof px.buf - px.n;
+    memcpy(px.buf + px.n, p + k, c);
+    px.n += c;
+    if ((p[4] & 1) && px.got_head) {
+        px.r.body = px.buf;
+        px.r.len = px.n;
+        px.r.body_static = false;
+        http_respond(px.id, &px.r);
+        px.busy = false;
+    }
+}
+
+// ------------------------------------------------------------------ firmware part from MCU-A
+// chunks of 512 bytes, each acknowledged; written sector by sector into the slot that is not running
+static struct { uint8_t sec[4096]; uint32_t sec_off; bool dirty, active; } fw;
+
+static void fw_flush(void) {
+    if (!fw.dirty) return;
+    bootctl_flash_write(bootctl_slot_offset(!bootctl_running_slot()) + fw.sec_off, fw.sec, sizeof fw.sec);
+    fw.dirty = false;
+}
+
+static void on_fw_chunk(const uint8_t *p, size_t n) {
+    uint32_t off;
+    if (n < 4) return;
+    memcpy(&off, p, 4);
+    if (off == 0xFFFFFFFFu) {
+        uint8_t ack[5] = {0xFF, 0xFF, 0xFF, 0xFF, 1};
+        if (n >= 40) {
+            uint32_t len;
+            memcpy(&len, p + 4, 4);
+            fw_flush();
+            int slot = !bootctl_running_slot();
+            if (len <= FW_SLOT_SIZE && bootctl_verify(slot, len, p + 8) && bootctl_set_pending(slot, len, p + 8)) ack[4] = 0;
+        }
+        link_send(LM_FW_ACK, ack, 5);
+        if (!ack[4]) {
+            sleep_ms(100);
+            watchdog_reboot(0, 0, 10);
+        }
+        fw.active = false;
+        return;
+    }
+    if (n < 4 + 512 || off % 512 || off >= FW_SLOT_SIZE) return;
+    if (!fw.active || off == 0) { fw.active = true; fw.dirty = false; fw.sec_off = 0; memset(fw.sec, 0xFF, sizeof fw.sec); }
+    uint32_t s = off & ~4095u;
+    if (s != fw.sec_off) {   // next sector: write the previous one
+        fw_flush();
+        fw.sec_off = s;
+        memset(fw.sec, 0xFF, sizeof fw.sec);
+    }
+    memcpy(fw.sec + (off - s), p + 4, 512);
+    fw.dirty = true;
+    if (off - s == 4096 - 512) fw_flush();   // sector complete
+    link_send(LM_FW_ACK, &off, 4);
+    led_set(LED_BLINK_FAST, LED_ORANGE);
+}
+
+static bool stream_handler(int id, const char *path, size_t total, size_t off, const uint8_t *d, size_t n, bool last,
+                           http_resp_t *out) {
+    if (strncmp(path, "/api/firmware", 13) || !link_alive()) {
+        http_json(out, 400, "{\"error\":\"busy\"}");
+        return false;
+    }
+    if (off == 0) { px.busy = true; px.got_head = false; px.id = id; px.n = 0; }
+    px.sent = now_ms();
+    // forward to MCU-A in link-sized pieces
+    uint8_t m[LINK_MAX_PAYLOAD];
+    for (size_t k = 0; k < n || (k == 0 && n == 0);) {
+        size_t c = n - k > LINK_MAX_PAYLOAD - 13 ? LINK_MAX_PAYLOAD - 13 : n - k;
+        uint32_t i = (uint32_t)id, t = (uint32_t)total, o = (uint32_t)(off + k);
+        memcpy(m, &i, 4); memcpy(m + 4, &t, 4); memcpy(m + 8, &o, 4);
+        m[12] = last && k + c == n;
+        memcpy(m + 13, d + k, c);
+        link_send(LM_FW_UPLOAD, m, 13 + c);
+        k += c;
+        if (!c) break;
+    }
+    return true;   // the answer comes from MCU-A
+}
+
 // ------------------------------------------------------------------ main
 static void send_status(void) {
     uint8_t m[14] = {0};
-    m[0] = (uint8_t)((port_mounted() ? 1 : 0) | (port_suspended() ? 2 : 0));
+    m[0] = (uint8_t)((port_mounted() ? 1 : 0) | (port_suspended() ? 2 : 0) | (bootctl_running_slot() ? 4 : 0));
     m[1] = port_kbd_leds();
     strncpy((char *)m + 2, KMS_VERSION, 12);
     link_send(LM_STATUS, m, sizeof m);
@@ -108,6 +243,8 @@ int main(void) {
     link_init();
     port_init();
     port_set_disk(&link_disk);
+    net_init();
+    http_init(http_handler, stream_handler);
     tud_init(BOARD_TUD_RHPORT);
     uint32_t t_status = 0, t_cap = 0;
     uint8_t last_flags = 0xFF;
@@ -131,12 +268,15 @@ int main(void) {
             case LM_LED: if (n >= 4) led_set(p[0], p[1], p[2], p[3]); break;
             case LM_SETTINGS:
                 if (n >= 1) {
+                    usb_set_network(p[0] & 1);
                     bool o = p[0] & 2;
                     if (o != owner) { owner = o; port_media_changed(); }
                     if (o && !capacity) request(2, 0, NULL);
                 }
                 break;
             case LM_MSC_RESP: on_msc_resp(p, n); break;
+            case LM_HTTP_RESP: on_http_resp(p, n); break;
+            case LM_FW_CHUNK: on_fw_chunk(p, n); break;
             case LM_REBOOT:
                 if (n >= 1 && p[0] == 1) reset_usb_boot(0, 0);
                 watchdog_reboot(0, 0, 10);
@@ -163,6 +303,16 @@ int main(void) {
         if (owner && !capacity && !req.busy && t - t_cap > 1000) { t_cap = t; request(2, 0, NULL); }
         if (req.busy && req.op == 2 && req.done) req.busy = false;
         if (req.busy && !req.done && t - req.sent > 1500) req.busy = false;
+        if (px.busy && t - px.sent > 15000) {   // MCU-A checks an uploaded bundle for a few seconds
+            http_resp_t r;
+            http_json(&r, 503, "{\"error\":\"busy\"}");
+            http_respond(px.id, &r);
+            px.busy = false;
+        }
+        net_task();
         led_task();
+        static bool healthy;
+        if (!healthy && (port_mounted() || alive)) { healthy = true; bootctl_confirm(); }
+        watchdog_update();
     }
 }

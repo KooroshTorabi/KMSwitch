@@ -20,6 +20,13 @@
 #include "pio_usb.h"
 #include "sd_spi.h"
 #include "storage.h"
+#include "app.h"
+#include "net/http.h"
+#include "net/net.h"
+#include "usb_desc.h"
+#include "web_api.h"
+#include "update.h"
+#include "bootctl.h"
 #include "tusb.h"
 
 // ================================================================== core 1: USB host
@@ -96,6 +103,7 @@ void tuh_hid_report_received_cb(uint8_t dev, uint8_t idx, uint8_t const *rep, ui
 }
 
 static void core1_main(void) {
+    multicore_lockout_victim_init();   // core 0 pauses us while it writes flash (boot state)
     pio_usb_configuration_t cfg = PIO_USB_DEFAULT_CONFIG;
     cfg.pin_dp = PIN_USBH_DP;
     tuh_configure(BOARD_TUH_RHPORT, TUH_CFGID_RPI_PIO_USB_CONFIGURATION, &cfg);
@@ -131,6 +139,7 @@ static uint32_t last_mouse_ms;
 static uint32_t save_at;              // write KMSWITCH.TXT at this time (speed hotkeys), 0 = nothing to save
 static uint32_t bootsel_since;        // Ctrl+Alt+Shift+F8 held since
 static char cfg_text[STORAGE_CFG_MAX];
+static bool hold_input;             // measurement running: the user's input is held back
 
 static struct { bool connected, suspended; uint8_t leds; char fw[13]; } pcb;   // MCU-B / PC 2 state
 
@@ -275,14 +284,15 @@ static void change_speed(float f) {
 }
 
 // ------------------------------------------------------------------ typing into the active PC
-static void start_typing(const char *url) {
-    const kms_pc_cfg_t *p = &cfg.pc[active];
+static void start_typing_on(int pc, const char *url) {
+    const kms_pc_cfg_t *p = &cfg.pc[pc];
     typing_n = kms_open_url(p->os, p->kbd_layout, url, typing, sizeof typing / sizeof typing[0]);
     typing_i = 0;
     typing_down = false;
-    typing_pc = active;
+    typing_pc = pc;
     typing_next = now_ms() + 300;   // let the user release the hotkey first
 }
+static void start_typing(const char *url) { start_typing_on(active, url); }
 
 static void typing_task(void) {
     if (typing_i >= typing_n || (int32_t)(now_ms() - typing_next) < 0) return;
@@ -315,8 +325,11 @@ static void on_hotkeys(uint32_t fired) {
     if (fired & (1u << HK_SPEED_DOWN)) change_speed(1.0f / 1.1f);
     if (fired & (1u << HK_SPEED_RESET)) change_speed(0);
     if ((fired & (1u << HK_OPEN_CONFIG)) && cfg.config_ui && cfg.usb_network) start_typing("http://192.168.7.1");
-    if (fired & (1u << HK_MEASURE)) led_set(LED_FLASH_TWICE, LED_RED);   // measurement needs the USB network (next phase)
+    if ((fired & (1u << HK_MEASURE)) && cfg.config_ui) {
+        if (cfg.usb_network) web_measure(true, true); else led_set(LED_FLASH_TWICE, LED_RED);
+    }
     if (fired & (1u << HK_RES_BOOTSEL)) bootsel_since = now_ms() | 1;
+    if (fired & (1u << HK_RES_CONFIRM)) update_confirm();
 }
 
 static void on_kbd(const host_ev_t *e) {
@@ -342,15 +355,20 @@ static void on_kbd(const host_ev_t *e) {
     mask_mods &= merged.mods;
     out.mods &= (uint8_t)~mask_mods;
     if (fired) mask_key(active);
-    if (typing_i < typing_n) {
-        if (kms_report_has(&merged, 0x29)) typing_n = 0;   // Esc stops typing
-    } else {
-        send_kbd(active, &out);
+    if (update_waiting_confirm() && kms_report_has(&merged, 0x29)) update_cancel();   // Esc: no update
+    if (hold_input || typing_i < typing_n) {
+        if (kms_report_has(&merged, 0x29)) {   // Esc stops typing and measuring
+            typing_n = 0;
+            web_measure_cancel();
+        }
+        return;
     }
+    send_kbd(active, &out);
     if (fired) on_hotkeys(fired);
 }
 
 static void on_mouse(const host_ev_t *e) {
+    if (hold_input) return;
     uint32_t t = now_ms(), dt = t - last_mouse_ms;
     last_mouse_ms = t;
     bool buttons_changed = e->ms.buttons != mouse_buttons;
@@ -382,6 +400,102 @@ static void on_mouse(const host_ev_t *e) {
     if (px || py || wheel || pan || buttons_changed) send_pointer((uint8_t)wheel, (uint8_t)pan);
 }
 
+// ------------------------------------------------------------------ settings page requests from PC 2 (via MCU-B)
+// LM_HTTP_REQ: u32 id, u8 flags (bit0 last), data; the first chunk starts with "METHOD PATH\n"
+static struct { uint32_t id; size_t n; bool open; uint8_t buf[HTTP_BODY_MAX + 128]; } breq;
+
+static void http_reply_b(uint32_t id, const http_resp_t *r) {
+    uint8_t m[LINK_MAX_PAYLOAD];
+    size_t off = 0;
+    uint8_t ct = !r->ctype ? 1 : strstr(r->ctype, "json") ? 0 : strstr(r->ctype, "html") ? 2 : 1;
+    do {
+        size_t k = 0;
+        memcpy(m, &id, 4);
+        k = 5;
+        if (off == 0) {
+            m[k++] = (uint8_t)r->status; m[k++] = (uint8_t)(r->status >> 8);
+            m[k++] = (uint8_t)(ct | (r->gzip ? 0x80 : 0));
+        }
+        size_t c = r->len - off;
+        if (c > LINK_MAX_PAYLOAD - k) c = LINK_MAX_PAYLOAD - k;
+        memcpy(m + k, r->body + off, c);
+        off += c;
+        m[4] = (uint8_t)((off >= r->len ? 1 : 0) | (k > 5 ? 2 : 0));
+        link_send(LM_HTTP_RESP, m, k + c);
+    } while (off < r->len);
+}
+
+static void http_from_b(const uint8_t *p, size_t n) {
+    if (n < 5) return;
+    uint32_t id;
+    memcpy(&id, p, 4);
+    if (!breq.open || breq.id != id) { breq.open = true; breq.id = id; breq.n = 0; }
+    size_t k = n - 5;
+    if (breq.n + k > sizeof breq.buf) k = sizeof breq.buf - breq.n;
+    memcpy(breq.buf + breq.n, p + 5, k);
+    breq.n += k;
+    if (!(p[4] & 1)) return;
+    breq.open = false;
+    http_req_t r = {0};
+    r.id = (int)id;
+    uint8_t *nl = memchr(breq.buf, '\n', breq.n);
+    if (!nl) return;
+    *nl = 0;
+    char *sp = strchr((char *)breq.buf, ' ');
+    if (!sp) return;
+    *sp = 0;
+    snprintf(r.method, sizeof r.method, "%.7s", (char *)breq.buf);
+    snprintf(r.path, sizeof r.path, "%s", sp + 1);
+    r.body = nl + 1;
+    r.len = breq.n - (size_t)(nl + 1 - breq.buf);
+    http_resp_t out = {0};
+    web_handle(1, &r, &out);
+    http_reply_b(id, &out);
+}
+
+static bool http_local(const http_req_t *r, http_resp_t *out) { return web_handle(0, r, out); }
+static bool stream_local(int id, const char *path, size_t total, size_t off, const uint8_t *d, size_t n, bool last,
+                         http_resp_t *out) {
+    (void)id;
+    if (strncmp(path, "/api/firmware", 13)) { http_json(out, 413, "{\"error\":\"too large\"}"); return false; }
+    return update_stream(0, total, off, d, n, last, out);
+}
+
+// ------------------------------------------------------------------ services for web_api.c (app.h)
+const kms_config_t *app_cfg(void) { return &cfg; }
+int app_active(void) { return active; }
+bool app_pc_connected(int pc) { return pc_connected(pc); }
+const char *app_fw_b(void) { return pcb.fw[0] ? pcb.fw : ""; }
+void app_switch_to(int pc) { switch_to(pc); }
+void app_hold_input(bool h) {
+    if (h && !hold_input) release_all(active);
+    hold_input = h;
+}
+void app_send_abs(int pc, uint16_t x, uint16_t y) { send_abs(pc, 0, x, y, 0, 0); }
+void app_key(int pc, uint8_t mods, uint8_t key) {
+    typing[0] = (kms_keystroke_t){mods, key, 0};
+    typing_n = 1;
+    typing_i = 0;
+    typing_down = false;
+    typing_pc = pc;
+    typing_next = now_ms();
+}
+void app_type_url(int pc, const char *url) { start_typing_on(pc, url); }
+bool app_typing(void) { return typing_i < typing_n; }
+void app_set_config(const kms_config_t *c) {
+    bool net = cfg.usb_network;
+    cfg = *c;
+    apply_config();
+    save_config_now();
+    if (net != cfg.usb_network) usb_set_network(cfg.usb_network);
+}
+void app_measuring_leds(bool on) {
+    if (!on) { update_leds(); return; }
+    led_set(LED_BLINK_FAST, LED_WHITE);
+    uint8_t m[4] = {LED_BLINK_FAST, LED_WHITE};
+    link_send(LM_LED, m, 4);
+}
+
 // ------------------------------------------------------------------ link from MCU-B
 static void link_task(void) {
     uint8_t type;
@@ -396,12 +510,26 @@ static void link_task(void) {
                 pcb.suspended = p[0] & 2;
                 pcb.leds = p[1];
                 if (n >= 14) { memcpy(pcb.fw, p + 2, 12); pcb.fw[12] = 0; }
+                update_b_status((p[0] & 4) ? 1 : 0);
+                if (pcb.connected && pcb.fw[0]) update_sync_b(pcb.fw);
                 if (active == 1) want_kbd_leds = pcb.leds;
-                if (!was && pcb.connected) { send_settings(); update_leds(); }
+                if (!was && pcb.connected) { send_settings(); update_leds(); web_pc_connected(1); }
                 if (was && !pcb.connected && active == 1 && port_mounted()) switch_to(0);
             }
             break;
         case LM_MSC_REQ: storage_link_request(p, n); break;
+        case LM_HTTP_REQ: http_from_b(p, n); break;
+        case LM_FW_ACK: update_b_ack(p, n); break;
+        case LM_FW_UPLOAD:
+            if (n >= 13) {
+                uint32_t id, total, off;
+                memcpy(&id, p, 4); memcpy(&total, p + 4, 4); memcpy(&off, p + 8, 4);
+                http_resp_t r = {0};
+                bool more = update_stream(1, total, off, p + 13, n - 13, p[12], &r);
+                if (r.status) http_reply_b(id, &r);
+                else if (!more) { http_json(&r, 400, "{\"error\":\"format\"}"); http_reply_b(id, &r); }
+            }
+            break;
         case LM_PING: link_send(LM_PONG, p, n); break;
         default: break;
         }
@@ -423,11 +551,14 @@ int main(void) {
     storage_init();
     port_init();
     port_set_disk(storage_local_disk());
+    kms_config_defaults(&cfg);
+    load_config();                       // before USB: the network adapter is offered only if usb_network = on
+    usb_set_network(cfg.usb_network);
+    net_init();
+    http_init(http_local, stream_local);
     tud_init(BOARD_TUD_RHPORT);
     multicore_launch_core1(core1_main);
-
-    kms_config_defaults(&cfg);
-    load_config();
+    bootctl_core1_is_victim(true);
     bool was_last = (watchdog_hw->scratch[0] & 0xFFFF0000u) == 0x4B4D0000u;
     active = cfg.start_on == START_PC2 ? 1 : cfg.start_on == START_LAST && was_last ? (int)(watchdog_hw->scratch[0] & 1) : 0;
     kms_pointer_init(&ptr, &L, active);
@@ -447,12 +578,19 @@ int main(void) {
                     if (kslot[i].used && kslot[i].dev == e.dev && kslot[i].idx == e.idx) kslot[i].used = false;
             }
         }
+        net_task();
         link_task();
         storage_task();
+        web_task();
         typing_task();
         led_task();
         uint32_t t = now_ms();
-        if (storage_config_reload_due()) load_config();
+        if (storage_config_reload_due()) { load_config(); update_check_drive(); }
+        update_task();
+        if (update_busy()) hold_input = true;
+        static bool healthy;
+        if (!healthy && (port_mounted() || link_alive())) { healthy = true; bootctl_confirm(); }
+        watchdog_update();
         if (save_at && (int32_t)(t - save_at) >= 0) { save_at = 0; save_config_now(); }
         if (bootsel_since) {
             if (!(merged.mods & 0x07) || !kms_report_has(&merged, 0x41)) bootsel_since = 0;
@@ -463,6 +601,8 @@ int main(void) {
             }
         }
         // if the active PC goes away, move to the other one when it is there
+        static bool pc1_was;
+        if (port_mounted() != pc1_was) { pc1_was = port_mounted(); if (pc1_was) web_pc_connected(0); }
         if (t - t_conn > 250) {
             t_conn = t;
             if (!pc_connected(active) && pc_connected(!active)) switch_to(!active);

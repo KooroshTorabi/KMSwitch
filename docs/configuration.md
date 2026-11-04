@@ -43,7 +43,7 @@ switch with the hotkey.
 
 ## The settings page
 
-The box adds a small USB network adapter to each PC (CDC-NCM, with RNDIS for Windows 10). It is a private
+The box adds a small USB network adapter to each PC (RNDIS for Windows, CDC-ECM for macOS and Linux). It is a private
 link between that PC and the box only: no internet, no gateway, no change to the PC's normal network.
 The box answers at **`http://192.168.7.1`** on both PCs and serves the settings page from its own flash.
 

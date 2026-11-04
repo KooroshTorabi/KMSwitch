@@ -24,7 +24,7 @@ BIOS, and the two PCs stay galvanically isolated.
 | ESD protection | USBLC6-2SC6 on the USB-A port (both variants) and on both PC USB-C ports (variant B) |
 | RGB LED (optional) | 3-pin header J6 (5V, DIN, GND) for a WS2812/SK6812 LED or strip, for your own case design |
 
-> **Status:** hardware rev 1.0, not yet built or tested. The firmware is not written yet. See *Before you order* below.
+> **Status:** hardware rev 1.0 and firmware 1.0 are complete but not yet built or tested on real boards. See *Before you order* below and [firmware/README.md](firmware/README.md).
 
 ![variant B board](docs/board-b-front.png)
 
