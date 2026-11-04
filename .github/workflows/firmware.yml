@@ -17,6 +17,7 @@ jobs:
         run: firmware/get_deps.sh
       - name: Build
         run: |
+          export CXXFLAGS="-include cstdint"
           cmake -S firmware -B firmware/build -G Ninja -DKMS_VERSION=ci-${GITHUB_SHA::7}
           ninja -C firmware/build
       - uses: actions/upload-artifact@v4
