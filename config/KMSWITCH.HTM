@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>kmswitch settings</title>
+<style>
+  :root {
+    --bg: #f4f5f7; --card: #ffffff; --ink: #1d2330; --muted: #667085; --line: #e3e6eb;
+    --accent: #2f6fed; --accent-soft: #e8efff; --pc1: #2f6fed; --pc2: #e2742f; --ok: #1f8a4c; --warn: #b54708;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #14171c; --card: #1d2128; --ink: #e8ebf0; --muted: #98a2b3; --line: #2c323c;
+            --accent: #6b9bff; --accent-soft: #233150; --pc1: #6b9bff; --pc2: #f29a5c; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; background: var(--card); border-bottom: 1px solid var(--line);
+           display: flex; align-items: center; gap: 12px; padding: 10px 20px; flex-wrap: wrap; }
+  header h1 { font-size: 17px; margin: 0 8px 0 0; letter-spacing: .2px; }
+  header .status { color: var(--muted); font-size: 13px; flex: 1; min-width: 180px; }
+  header .status b { color: var(--ink); font-weight: 600; }
+  button { font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+           padding: 7px 14px; border-radius: 8px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { filter: brightness(1.08); }
+  main { max-width: 1180px; margin: 0 auto; padding: 18px 20px 40px; display: grid; gap: 16px;
+         grid-template-columns: 1fr 1fr; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; }
+  .card h2 { font-size: 15px; margin: 0 0 4px; }
+  .card .hint { color: var(--muted); font-size: 12.5px; margin: 0 0 12px; }
+  .wide { grid-column: 1 / -1; }
+  .row { display: grid; grid-template-columns: 150px 1fr; align-items: center; gap: 10px; margin: 9px 0; }
+  .row label.k { color: var(--muted); }
+  input[type=text], select { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+                             border-radius: 7px; padding: 6px 8px; width: 100%; }
+  input[type=range] { width: 100%; accent-color: var(--accent); }
+  .slider { display: grid; grid-template-columns: 1fr 64px; gap: 10px; align-items: center; }
+  .slider output { text-align: right; font-variant-numeric: tabular-nums; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+  .seg button { border: 0; border-radius: 0; padding: 6px 12px; background: transparent; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .switch { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; }
+  .switch input { width: 34px; height: 20px; appearance: none; background: var(--line); border-radius: 20px;
+                  position: relative; cursor: pointer; transition: background .15s; margin: 0; }
+  .switch input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px;
+                         border-radius: 50%; background: #fff; transition: left .15s; }
+  .switch input:checked { background: var(--accent); }
+  .switch input:checked::after { left: 16px; }
+  #screens { width: 100%; height: 280px; display: block; }
+  .pcs { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .pc h2 { display: flex; align-items: center; gap: 8px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  table.hk { width: 100%; border-collapse: collapse; }
+  table.hk td { padding: 6px 4px; border-top: 1px solid var(--line); vertical-align: middle; }
+  table.hk tr:first-child td { border-top: 0; }
+  table.hk td.act { width: 34%; }
+  table.hk td.act small { display: block; color: var(--muted); }
+  .mods { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+  .mods label { border: 1px solid var(--line); border-radius: 6px; padding: 3px 7px; font-size: 12.5px;
+                cursor: pointer; user-select: none; }
+  .mods input { display: none; }
+  .mods label:has(input:checked) { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .hkkey { width: 150px !important; display: inline-block; margin-left: 6px; }
+  .hkshow { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; color: var(--muted); margin-left: 8px; }
+  .dup { color: var(--warn); font-size: 12px; margin-left: 6px; }
+  pre#out { margin: 0; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;
+            max-height: 420px; overflow: auto; font: 12.5px/1.5 ui-monospace, Consolas, monospace; white-space: pre; }
+  .toast { position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--bg);
+           padding: 9px 16px; border-radius: 8px; opacity: 0; transition: opacity .2s; pointer-events: none; }
+  .toast.show { opacity: .95; }
+  .drop { outline: 3px dashed var(--accent); outline-offset: -8px; }
+  @media (max-width: 900px) { main, .pcs { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>kmswitch settings</h1>
+  <div class="status" id="status">No file opened: showing the defaults. Open <b>KMSWITCH.TXT</b> from the kmswitch drive.</div>
+  <button id="btnOpen">Open KMSWITCH.TXT</button>
+  <button id="btnDefaults" title="Put every setting back to its default">Defaults</button>
+  <button id="btnSave" class="primary">Save</button>
+  <input type="file" id="filePick" accept=".txt,text/plain" hidden>
+</header>
+
+<main>
+  <section class="card wide">
+    <h2>Screens</h2>
+    <p class="hint">Where PC 2 is, seen from PC 1. The shapes follow each PC's aspect ratio; the offset moves the screens against each other. Push the pointer through the shared edge to switch.</p>
+    <div class="row" style="grid-template-columns:150px auto 1fr">
+      <label class="k">PC 2 is</label>
+      <div class="seg" id="layoutSeg">
+        <button data-v="left">left</button><button data-v="right">right</button>
+        <button data-v="above">above</button><button data-v="below">below</button>
+      </div>
+      <span></span>
+    </div>
+    <svg id="screens" viewBox="0 0 1000 280" aria-label="Screen arrangement"></svg>
+  </section>
+
+  <div class="pcs wide" id="pcs"></div>
+
+  <section class="card">
+    <h2>Switching</h2>
+    <p class="hint">How the box moves between the two PCs.</p>
+    <div class="row"><label class="k">Edge switching</label>
+      <label class="switch"><input type="checkbox" data-k="general.edge_switch"><span>switch at the screen edge</span></label></div>
+    <div class="row"><label class="k">Edge delay</label>
+      <div class="slider"><input type="range" min="0" max="1000" step="25" data-k="general.edge_delay_ms"><output data-o="general.edge_delay_ms"></output></div></div>
+    <div class="row"><label class="k">Corners</label>
+      <label class="switch"><input type="checkbox" data-k="general.edge_corner_block"><span>no switch in screen corners</span></label></div>
+    <div class="row"><label class="k">After power-up</label>
+      <select data-k="general.start_on"><option value="pc1">start on PC 1</option><option value="pc2">start on PC 2</option><option value="last">last used PC</option></select></div>
+    <div class="row"><label class="k">Editor hotkey</label>
+      <label class="switch"><input type="checkbox" data-k="general.config_ui"><span>let the box open this page</span></label></div>
+  </section>
+
+  <section class="card">
+    <h2>Hotkeys</h2>
+    <p class="hint">Pick modifiers and a key, or "none" to turn a hotkey off. The PC never sees these keys. WIN is the Windows key (Command on a Mac).</p>
+    <table class="hk" id="hk"></table>
+  </section>
+
+  <section class="card wide">
+    <h2>KMSWITCH.TXT</h2>
+    <p class="hint">This is exactly what Save writes. Settings this page does not know are kept at the end.</p>
+    <pre id="out"></pre>
+    <div style="margin-top:10px;display:flex;gap:8px"><button id="btnCopy">Copy text</button></div>
+  </section>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+// ------------------------------------------------------------------ model
+const DEFAULTS = {
+  general: { layout: 'right', edge_switch: true, edge_delay_ms: 0, edge_corner_block: true, start_on: 'pc1', config_ui: true },
+  hotkeys: { switch: 'WIN+F12', relative_mode: 'WIN+F11', speed_up: 'WIN+SHIFT+UP', speed_down: 'WIN+SHIFT+DOWN',
+             speed_reset: 'WIN+SHIFT+HOME', open_config: 'WIN+F10' },
+  pc1: { name: 'PC 1', aspect: '16:9', speed_x: 1.0, speed_y: 1.0, accel: 'medium', y_offset: 0, x_offset: 0, os: 'windows', kbd_layout: 'us' },
+  pc2: { name: 'PC 2', aspect: '16:9', speed_x: 1.0, speed_y: 1.0, accel: 'medium', y_offset: 0, x_offset: 0, os: 'windows', kbd_layout: 'us' },
+};
+const HOTKEYS = [
+  ['switch', 'Switch PC', 'to the other PC'],
+  ['relative_mode', 'Relative mode', 'for games; pauses edge switching'],
+  ['speed_up', 'Faster', 'active PC, x 1.1'],
+  ['speed_down', 'Slower', 'active PC, / 1.1'],
+  ['speed_reset', 'Reset speed', 'active PC, back to 1.0'],
+  ['open_config', 'Open this page', 'on the active PC'],
+];
+const MODS = ['CTRL', 'ALT', 'WIN', 'SHIFT', 'RCTRL', 'RALT', 'RWIN', 'RSHIFT'];   // canonical order
+const KEYS = [].concat(
+  Array.from({length: 24}, (_, i) => 'F' + (i + 1)),
+  'A B C D E F G H I J K L M N O P Q R S T U V W X Y Z'.split(' '),
+  '0 1 2 3 4 5 6 7 8 9'.split(' '),
+  ['UP', 'DOWN', 'LEFT', 'RIGHT', 'HOME', 'END', 'PGUP', 'PGDN', 'INS', 'DEL', 'ESC', 'TAB', 'SPACE', 'ENTER',
+   'BACKSPACE', 'PAUSE', 'SCROLLLOCK', 'NUMLOCK', 'CAPSLOCK', 'PRINTSCREEN'],
+  Array.from({length: 10}, (_, i) => 'KP' + i));
+const ASPECTS = ['16:9', '16:10', '21:9', '32:9', '4:3', '5:4', '9:16'];
+const LAYOUTS = { us: 'English (US)', de: 'German', at: 'German (Austria)', ch: 'Swiss German', fr: 'French',
+                  uk: 'English (UK)', it: 'Italian', es: 'Spanish' };
+const RANGES = { 'general.edge_delay_ms': [0, 1000], speed_x: [0.25, 4], speed_y: [0.25, 4], y_offset: [-50, 50], x_offset: [-50, 50] };
+
+let S = clone(DEFAULTS);
+let extras = {};          // section -> [[key, value]] not known to this page
+let fileHandle = null;
+let fileName = null;
+let dirty = false;
+
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)); }
+
+// ------------------------------------------------------------------ parse / write
+function parseBool(v) {
+  const s = String(v).trim().toLowerCase();
+  if (['on', 'yes', 'true', '1'].includes(s)) return true;
+  if (['off', 'no', 'false', '0'].includes(s)) return false;
+  return null;
+}
+function normHotkey(v) {
+  const s = String(v).trim().toUpperCase().replace(/\s+/g, '');
+  if (!s || s === 'NONE') return 'none';
+  const parts = s.split('+').filter(Boolean);
+  const key = parts.pop();
+  if (!KEYS.includes(key) || parts.some(p => !MODS.includes(p))) return null;
+  const mods = MODS.filter(m => parts.includes(m));
+  return mods.concat(key).join('+');
+}
+function validAspect(v) { return /^\d{1,2}:\d{1,2}$/.test(String(v).trim()) && !String(v).trim().split(':').some(n => +n === 0); }
+
+function parse(text) {
+  const s = clone(DEFAULTS), ex = {}, problems = [];
+  let sec = null;
+  text.split(/\r?\n/).forEach((raw, i) => {
+    const line = raw.replace(/\s[#;].*$/, '').replace(/^[#;].*$/, '').trim();
+    if (!line) return;
+    const m = line.match(/^\[([^\]]+)\]/);
+    if (m) { sec = m[1].trim().toLowerCase(); return; }
+    const eq = line.indexOf('=');
+    if (eq < 0 || !sec) { problems.push('line ' + (i + 1)); return; }
+    const k = line.slice(0, eq).trim().toLowerCase(), v = line.slice(eq + 1).trim();
+    const d = DEFAULTS[sec];
+    if (!d || !(k in d)) { (ex[sec] = ex[sec] || []).push([k, v]); return; }
+    const def = d[k];
+    let val;
+    if (typeof def === 'boolean') val = parseBool(v);
+    else if (typeof def === 'number') { val = parseFloat(v); if (isNaN(val)) val = null; }
+    else if (sec === 'hotkeys') val = normHotkey(v);
+    else val = v;
+    if (val === null || val === '') { problems.push(sec + '.' + k); return; }
+    if (k === 'aspect' && !validAspect(val)) { problems.push(sec + '.' + k); return; }
+    if (k === 'layout' && !['left', 'right', 'above', 'below'].includes(val.toLowerCase())) { problems.push(sec + '.' + k); return; }
+    s[sec][k] = typeof val === 'string' && k !== 'name' && sec !== 'hotkeys' ? val.toLowerCase() : val;
+  });
+  sanitize(s);
+  return { s, ex, problems };
+}
+function sanitize(s) {
+  s.general.edge_delay_ms = Math.round(clamp(s.general.edge_delay_ms, 0, 1000));
+  for (const pc of ['pc1', 'pc2']) {
+    for (const k of ['speed_x', 'speed_y']) s[pc][k] = Math.round(clamp(s[pc][k], 0.25, 4) * 100) / 100;
+    for (const k of ['y_offset', 'x_offset']) s[pc][k] = Math.round(clamp(s[pc][k], -50, 50));
+    if (!['off', 'low', 'medium', 'high'].includes(s[pc].accel)) s[pc].accel = 'medium';
+    if (!['windows', 'mac', 'linux'].includes(s[pc].os)) s[pc].os = 'windows';
+    if (!(s[pc].kbd_layout in LAYOUTS)) s[pc].kbd_layout = 'us';
+  }
+}
+const COMMENTS = {
+  'general.layout': "where PC 2's screen is, seen from PC 1: right | left | above | below",
+  'general.edge_switch': 'switch by pushing the pointer past the screen edge',
+  'general.edge_delay_ms': '0-1000: stay at the edge this long before switching',
+  'general.edge_corner_block': 'no switch while the pointer is in a screen corner',
+  'general.start_on': 'pc1 | pc2 | last',
+  'general.config_ui': 'allow the open_config hotkey',
+  'hotkeys.relative_mode': 'relative mouse for games; pauses edge switching',
+  'pc.aspect': 'shape of the whole desktop: 16:9 16:10 21:9 32:9 4:3 5:4 9:16 or W:H',
+  'pc.speed_x': '0.25-4.0', 'pc.speed_y': '0.25-4.0', 'pc.accel': 'off | low | medium | high',
+  'pc.y_offset': '-50..50 % of screen height (layout right / left)',
+  'pc.x_offset': '-50..50 % of screen width (layout above / below)',
+  'pc.os': 'windows | mac | linux (for open_config only)',
+  'pc.kbd_layout': 'us de at ch fr uk it es (for open_config only)',
+};
+function fmt(v) {
+  if (typeof v === 'boolean') return v ? 'on' : 'off';
+  if (typeof v === 'number' && !Number.isInteger(v)) return String(v);
+  if (typeof v === 'number') return String(v) + (v === Math.trunc(v) && String(v).indexOf('.') < 0 ? '' : '');
+  return String(v);
+}
+function write(s) {
+  const out = ['# kmswitch settings. Every line is optional: a missing or wrong value uses the default.',
+               '# Full description: docs/configuration.md.  Visual editor: KMSWITCH.HTM on this drive.'];
+  for (const sec of ['general', 'hotkeys', 'pc1', 'pc2']) {
+    out.push('', '[' + sec + ']' + (sec === 'hotkeys' ? '                 # modifiers CTRL SHIFT ALT WIN (+ RCTRL RSHIFT RALT RWIN) + one key, or none' : ''));
+    for (const [k, v] of Object.entries(s[sec])) {
+      let val = fmt(v);
+      if ((k === 'speed_x' || k === 'speed_y') && Number.isInteger(v)) val = v.toFixed(1);
+      const key = (k + ' = ' + val);
+      const c = COMMENTS[sec + '.' + k] || COMMENTS['pc.' + k];
+      out.push(c && !(sec.startsWith('pc') && k === 'name') && !(sec === 'pc2') ? key.padEnd(25) + ' # ' + c : key);
+    }
+    if (extras[sec] && extras[sec].length) {
+      out.push('# kept from your file (not used by this editor):');
+      extras[sec].forEach(([k, v]) => out.push(k + ' = ' + v));
+    }
+  }
+  for (const sec of Object.keys(extras)) {
+    if (DEFAULTS[sec]) continue;
+    out.push('', '[' + sec + ']', '# kept from your file (not used by this editor):');
+    extras[sec].forEach(([k, v]) => out.push(k + ' = ' + v));
+  }
+  return out.join('\n') + '\n';
+}
+
+// ------------------------------------------------------------------ UI build
+const $ = (q, el = document) => el.querySelector(q);
+const $$ = (q, el = document) => Array.from(el.querySelectorAll(q));
+
+function pcCard(pc, color) {
+  const asp = ASPECTS.map(a => `<option value="${a}">${a}${a === '9:16' ? ' (portrait)' : ''}</option>`).join('') + '<option value="custom">other…</option>';
+  const lay = Object.entries(LAYOUTS).map(([k, v]) => `<option value="${k}">${v}</option>`).join('');
+  return `<section class="card pc" data-pc="${pc}">
+    <h2><span class="dot" style="background:${color}"></span><span data-title="${pc}"></span></h2>
+    <p class="hint">${pc === 'pc1' ? 'The PC on the left-hand USB-C (MCU-A side).' : 'The PC on the right-hand USB-C (MCU-B side).'}</p>
+    <div class="row"><label class="k">Name</label><input type="text" maxlength="24" data-k="${pc}.name"></div>
+    <div class="row"><label class="k">Screen shape</label>
+      <div style="display:flex;gap:8px"><select data-aspect="${pc}">${asp}</select>
+      <input type="text" data-k="${pc}.aspect" style="width:90px;display:none" placeholder="W:H"></div></div>
+    <div class="row"><label class="k">Speed</label>
+      <label class="switch"><input type="checkbox" data-link="${pc}" checked><span>same horizontal and vertical</span></label></div>
+    <div class="row"><label class="k">Horizontal</label>
+      <div class="slider"><input type="range" min="0.25" max="4" step="0.05" data-k="${pc}.speed_x"><output data-o="${pc}.speed_x"></output></div></div>
+    <div class="row"><label class="k">Vertical</label>
+      <div class="slider"><input type="range" min="0.25" max="4" step="0.05" data-k="${pc}.speed_y"><output data-o="${pc}.speed_y"></output></div></div>
+    <div class="row"><label class="k">Acceleration</label>
+      <div class="seg" data-seg="${pc}.accel"><button data-v="off">off</button><button data-v="low">low</button><button data-v="medium">medium</button><button data-v="high">high</button></div></div>
+    <div class="row"><label class="k" data-offlabel="${pc}">Vertical offset</label>
+      <div class="slider"><input type="range" min="-50" max="50" step="1" data-off="${pc}"><output data-offo="${pc}"></output></div></div>
+    <div class="row"><label class="k">Operating system</label>
+      <select data-k="${pc}.os"><option value="windows">Windows</option><option value="mac">macOS</option><option value="linux">Linux</option></select></div>
+    <div class="row"><label class="k">Keyboard layout</label><select data-k="${pc}.kbd_layout">${lay}</select></div>
+    <p class="hint" style="margin:6px 0 0">OS and keyboard layout are only used when the box opens this page with its hotkey.</p>
+  </section>`;
+}
+
+function buildHotkeys() {
+  const keyOpts = '<option value="none">none</option>' + KEYS.map(k => `<option>${k}</option>`).join('');
+  $('#hk').innerHTML = HOTKEYS.map(([k, label, sub]) => `<tr data-hk="${k}">
+    <td class="act">${label}<small>${sub}</small></td>
+    <td><span class="mods">${['CTRL', 'ALT', 'WIN', 'SHIFT'].map(m => `<label><input type="checkbox" value="${m}">${m}</label>`).join('')}</span>
+      <select class="hkkey">${keyOpts}</select><span class="dup"></span></td></tr>`).join('');
+}
+
+function build() {
+  $('#pcs').innerHTML = pcCard('pc1', 'var(--pc1)') + pcCard('pc2', 'var(--pc2)');
+  buildHotkeys();
+  // generic inputs
+  $$('[data-k]').forEach(el => {
+    const ev = el.type === 'checkbox' || el.tagName === 'SELECT' ? 'change' : 'input';
+    el.addEventListener(ev, () => {
+      const [sec, k] = el.dataset.k.split('.');
+      let v = el.type === 'checkbox' ? el.checked : el.value;
+      if (typeof DEFAULTS[sec][k] === 'number') v = parseFloat(v);
+      if (k === 'aspect' && !validAspect(v)) return;
+      S[sec][k] = v;
+      if ((k === 'speed_x' || k === 'speed_y') && $(`[data-link="${sec}"]`).checked) S[sec][k === 'speed_x' ? 'speed_y' : 'speed_x'] = v;
+      changed();
+    });
+  });
+  $$('[data-link]').forEach(el => el.addEventListener('change', () => {
+    if (el.checked) { S[el.dataset.link].speed_y = S[el.dataset.link].speed_x; changed(); }
+  }));
+  $$('[data-aspect]').forEach(el => el.addEventListener('change', () => {
+    const pc = el.dataset.aspect, txt = $(`[data-k="${pc}.aspect"]`);
+    if (el.value === 'custom') { txt.style.display = ''; txt.focus(); return; }
+    txt.style.display = 'none'; S[pc].aspect = el.value; changed();
+  }));
+  $$('[data-seg]').forEach(seg => seg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const [sec, k] = seg.dataset.seg.split('.'); S[sec][k] = b.dataset.v; changed();
+  }));
+  $('#layoutSeg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return; S.general.layout = b.dataset.v; changed();
+  });
+  $$('[data-off]').forEach(el => el.addEventListener('input', () => {
+    const pc = el.dataset.off; S[pc][vertical() ? 'y_offset' : 'x_offset'] = parseInt(el.value, 10); changed();
+  }));
+  $$('#hk tr').forEach(tr => {
+    const upd = () => {
+      const key = $('select', tr).value;
+      const mods = MODS.filter(m => $$('input:checked', tr).some(i => i.value === m));
+      S.hotkeys[tr.dataset.hk] = key === 'none' ? 'none' : mods.concat(key).join('+');
+      changed();
+    };
+    $$('input', tr).forEach(i => i.addEventListener('change', upd));
+    $('select', tr).addEventListener('change', upd);
+  });
+}
+function vertical() { return S.general.layout === 'left' || S.general.layout === 'right'; }
+
+// ------------------------------------------------------------------ render
+function render() {
+  $$('[data-k]').forEach(el => {
+    const [sec, k] = el.dataset.k.split('.');
+    const v = S[sec][k];
+    if (el.type === 'checkbox') el.checked = !!v;
+    else if (document.activeElement !== el || el.type === 'range') el.value = v;
+  });
+  $$('[data-o]').forEach(o => {
+    const [sec, k] = o.dataset.o.split('.'); const v = S[sec][k];
+    o.textContent = k === 'edge_delay_ms' ? v + ' ms' : (+v).toFixed(2) + '×';
+  });
+  $$('[data-title]').forEach(t => t.textContent = S[t.dataset.title].name || t.dataset.title.toUpperCase());
+  $$('[data-aspect]').forEach(el => {
+    const a = S[el.dataset.aspect].aspect;
+    if (ASPECTS.includes(a)) { el.value = a; $(`[data-k="${el.dataset.aspect}.aspect"]`).style.display = 'none'; }
+    else { el.value = 'custom'; $(`[data-k="${el.dataset.aspect}.aspect"]`).style.display = ''; }
+  });
+  $$('[data-seg]').forEach(seg => {
+    const [sec, k] = seg.dataset.seg.split('.');
+    $$('button', seg).forEach(b => b.classList.toggle('on', b.dataset.v === S[sec][k]));
+  });
+  $$('#layoutSeg button').forEach(b => b.classList.toggle('on', b.dataset.v === S.general.layout));
+  $$('[data-off]').forEach(el => {
+    const pc = el.dataset.off, k = vertical() ? 'y_offset' : 'x_offset';
+    el.value = S[pc][k];
+    $(`[data-offo="${pc}"]`).textContent = (S[pc][k] > 0 ? '+' : '') + S[pc][k] + ' %';
+    $(`[data-offlabel="${pc}"]`).textContent = vertical() ? 'Vertical offset' : 'Horizontal offset';
+  });
+  const used = {};
+  Object.entries(S.hotkeys).forEach(([k, v]) => { if (v !== 'none') (used[v] = used[v] || []).push(k); });
+  $$('#hk tr').forEach(tr => {
+    const v = S.hotkeys[tr.dataset.hk];
+    const parts = v === 'none' ? [] : v.split('+');
+    const key = v === 'none' ? 'none' : parts.pop();
+    $('select', tr).value = key;
+    $$('input', tr).forEach(i => { i.checked = parts.includes(i.value); i.disabled = key === 'none'; });
+    $('.dup', tr).textContent = v !== 'none' && used[v].length > 1 ? 'used twice' : '';
+  });
+  drawScreens();
+  $('#out').textContent = write(S);
+}
+
+function aspectRatio(a) { const [w, h] = a.split(':').map(Number); return w / h; }
+function drawScreens() {
+  const svg = $('#screens'), W = 1000, H = 280, pad = 18;
+  const r1 = aspectRatio(S.pc1.aspect), r2 = aspectRatio(S.pc2.aspect);
+  const lay = S.general.layout;
+  // both screens get the same height (left/right) or width (above/below); offsets move PC 2 against PC 1
+  let a, b;
+  if (lay === 'left' || lay === 'right') {
+    let h = H - 2 * pad - 40;
+    let w1 = h * r1, w2 = h * r2;
+    const k = Math.min(1, (W - 2 * pad - 40) / (w1 + w2)); h *= k; w1 *= k; w2 *= k;
+    const off = (S.pc2.y_offset - S.pc1.y_offset) / 100 * h;
+    const x0 = (W - w1 - w2) / 2, y0 = (H - h) / 2;
+    const first = lay === 'right' ? ['pc1', w1, 0] : ['pc2', w2, off];
+    const second = lay === 'right' ? ['pc2', w2, off] : ['pc1', w1, 0];
+    a = { pc: first[0], x: x0, y: y0 + first[2], w: first[1], h };
+    b = { pc: second[0], x: x0 + first[1], y: y0 + second[2], w: second[1], h };
+  } else {
+    let w = 220;
+    let h1 = w / r1, h2 = w / r2;
+    const k = Math.min(1, (H - 2 * pad - 20) / (h1 + h2)); w *= k; h1 *= k; h2 *= k;
+    const off = (S.pc2.x_offset - S.pc1.x_offset) / 100 * w;
+    const x0 = (W - w) / 2, y0 = (H - h1 - h2) / 2;
+    const top = lay === 'above' ? ['pc2', h2, off] : ['pc1', h1, 0];
+    const bot = lay === 'above' ? ['pc1', h1, 0] : ['pc2', h2, off];
+    a = { pc: top[0], x: x0 + top[2], y: y0, w, h: top[1] };
+    b = { pc: bot[0], x: x0 + bot[2], y: y0 + top[1], w, h: bot[1] };
+  }
+  const col = pc => pc === 'pc1' ? 'var(--pc1)' : 'var(--pc2)';
+  const scr = s => `<g>
+      <rect x="${s.x + 3}" y="${s.y + 3}" width="${s.w - 6}" height="${s.h - 6}" rx="6" fill="${col(s.pc)}" fill-opacity="0.12" stroke="${col(s.pc)}" stroke-width="3"/>
+      <text x="${s.x + s.w / 2}" y="${s.y + s.h / 2 - 4}" text-anchor="middle" font-size="18" font-weight="600" fill="${col(s.pc)}">${esc(S[s.pc].name || s.pc)}</text>
+      <text x="${s.x + s.w / 2}" y="${s.y + s.h / 2 + 18}" text-anchor="middle" font-size="13" fill="var(--muted)">${S[s.pc].aspect} · speed ${(+S[s.pc].speed_x).toFixed(2)}×</text>
+    </g>`;
+  // shared edge highlight
+  let edge = '';
+  if (S.general.edge_switch) {
+    if (lay === 'left' || lay === 'right') {
+      const y1 = Math.max(a.y, b.y) + 3, y2 = Math.min(a.y + a.h, b.y + b.h) - 3;
+      if (y2 > y1) edge = `<line x1="${b.x}" y1="${y1}" x2="${b.x}" y2="${y2}" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>`;
+    } else {
+      const x1 = Math.max(a.x, b.x) + 3, x2 = Math.min(a.x + a.w, b.x + b.w) - 3;
+      if (x2 > x1) edge = `<line x1="${x1}" y1="${b.y}" x2="${x2}" y2="${b.y}" stroke="var(--accent)" stroke-width="5" stroke-linecap="round"/>`;
+    }
+  }
+  svg.innerHTML = scr(a) + scr(b) + edge +
+    `<text x="${W - pad}" y="${H - 6}" text-anchor="end" font-size="12" fill="var(--muted)">${S.general.edge_switch ? 'blue line: the pointer switches PC here' : 'edge switching is off: use the hotkey'}</text>`;
+}
+function esc(s) { return String(s).replace(/[&<>"]/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c])); }
+
+function changed() { sanitize(S); dirty = true; render(); setStatus(); }
+function setStatus(msg) {
+  const st = $('#status');
+  if (msg) { st.innerHTML = msg; return; }
+  const where = fileName ? `<b>${esc(fileName)}</b>` : 'defaults';
+  st.innerHTML = `Editing ${where}${dirty ? ' · <span style="color:var(--warn)">not saved</span>' : ''}`;
+}
+function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('show'); setTimeout(() => el.classList.remove('show'), 2200); }
+
+// ------------------------------------------------------------------ files
+function load(text, name) {
+  const r = parse(text);
+  S = r.s; extras = r.ex; fileName = name; dirty = false;
+  $$('[data-link]').forEach(el => el.checked = S[el.dataset.link].speed_x === S[el.dataset.link].speed_y);
+  render();
+  setStatus();
+  if (r.problems.length) toast('Some values were not valid and use the default: ' + r.problems.slice(0, 4).join(', '));
+  else toast('Loaded ' + name);
+}
+async function openFile() {
+  if (window.showOpenFilePicker) {
+    try {
+      const [h] = await window.showOpenFilePicker({ types: [{ description: 'kmswitch settings', accept: { 'text/plain': ['.txt'] } }] });
+      fileHandle = h;
+      load(await (await h.getFile()).text(), h.name);
+    } catch (e) { if (e.name !== 'AbortError') toast('Could not open the file: ' + e.message); }
+  } else {
+    $('#filePick').click();
+  }
+}
+$('#filePick').addEventListener('change', async e => {
+  const f = e.target.files[0]; if (!f) return;
+  fileHandle = null; load(await f.text(), f.name); e.target.value = '';
+});
+async function save() {
+  const text = write(S);
+  if (fileHandle && fileHandle.createWritable) {
+    try {
+      const w = await fileHandle.createWritable(); await w.write(text); await w.close();
+      dirty = false; setStatus(); toast('Saved to ' + fileHandle.name + '. The box picks it up within a second.'); return;
+    } catch (e) { toast('Could not write the file, downloading instead'); }
+  } else if (window.showSaveFilePicker) {
+    try {
+      const h = await window.showSaveFilePicker({ suggestedName: 'KMSWITCH.TXT', types: [{ description: 'kmswitch settings', accept: { 'text/plain': ['.txt'] } }] });
+      const w = await h.createWritable(); await w.write(text); await w.close();
+      fileHandle = h; fileName = h.name; dirty = false; setStatus(); toast('Saved. Make sure it is on the kmswitch drive.'); return;
+    } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+  a.download = 'KMSWITCH.TXT'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  dirty = false; setStatus();
+  toast('Downloaded KMSWITCH.TXT: copy it to the kmswitch drive, replacing the old one.');
+}
+$('#btnOpen').addEventListener('click', openFile);
+$('#btnSave').addEventListener('click', save);
+let armed = null;
+$('#btnDefaults').addEventListener('click', e => {
+  const btn = e.currentTarget;
+  if (dirty && !armed) {            // two clicks instead of confirm(), which some browsers block
+    btn.textContent = 'Click again to reset';
+    armed = setTimeout(() => { btn.textContent = 'Defaults'; armed = null; }, 3000);
+    return;
+  }
+  clearTimeout(armed); armed = null; btn.textContent = 'Defaults';
+  S = clone(DEFAULTS); extras = {}; changed(); toast('All settings back to default (not saved yet)');
+});
+$('#btnCopy').addEventListener('click', async () => {
+  try { await navigator.clipboard.writeText(write(S)); toast('Copied'); } catch (e) { toast('Copy failed: select the text and copy it'); }
+});
+document.addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('drop'); });
+document.addEventListener('dragleave', e => { if (e.target === document.documentElement || e.target === document.body) document.body.classList.remove('drop'); });
+document.addEventListener('drop', async e => {
+  e.preventDefault(); document.body.classList.remove('drop');
+  const item = e.dataTransfer.items && e.dataTransfer.items[0];
+  if (item && item.getAsFileSystemHandle) {
+    try { const h = await item.getAsFileSystemHandle(); if (h.kind === 'file') { fileHandle = h; load(await (await h.getFile()).text(), h.name); return; } } catch (_) {}
+  }
+  const f = e.dataTransfer.files[0]; if (f) { fileHandle = null; load(await f.text(), f.name); }
+});
+document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); save(); } });
+window.addEventListener('beforeunload', e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+
+build();
+render();
+setStatus('No file opened: showing the defaults. Open <b>KMSWITCH.TXT</b> from the kmswitch drive, or drop it on this page.');
+</script>
+</body>
+</html>

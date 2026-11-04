@@ -61,6 +61,14 @@ Both variants have the same features, the same GPIO map (so one firmware fits bo
 | Back-feed into a switched-off PC 1 | ~4.7 V can reach PC 1 VBUS through the module | none |
 | Good for | building one at home | ordering a batch, smallest result |
 
+## Configuration (optional)
+
+It works without any setup. To tune the mouse for different screens (speed per PC, screen shape, which side PC 2 is on, offset between screens, acceleration), change the hotkeys, or add a relative mode for games, put [`config/KMSWITCH.TXT`](config/KMSWITCH.TXT) and the visual editor [`config/KMSWITCH.HTM`](config/KMSWITCH.HTM) on the microSD card.
+The editor is one web page that runs offline in any browser and opens with **Win+F10**. The screen resolution itself never needs to be set, because the pointer is sent as an absolute position.
+Full reference: [docs/configuration.md](docs/configuration.md).
+
+![Visual configuration editor](docs/config-editor.png)
+
 ## Schematics
 
 Each variant has one readable sheet, split into framed blocks (power input, USB ports, MCU, microSD, isolation, ...) with real wires inside each block, named power symbols (`+5V_IN`, `+3V3_A`, `GND_B`, ...) and net labels between blocks.
@@ -82,6 +90,9 @@ hardware/
                                3dmodels/ (detailed STEP models for parts that have none in the KiCad library)
   variant-a-rp2040-zero/       KiCad project + fab/ (gerbers zip, BOM, CPL, schematic PDF, renders)
   variant-b-rp2040/            KiCad project + fab/
+config/
+  KMSWITCH.TXT                 default settings file for the microSD card
+  KMSWITCH.HTM                 visual settings editor (offline, any browser)
 enclosure/
   kmswitch_case.scad           parametric 3D-printable case (variant = "A" or "B")
   stl/                         ready-to-print bottom + lid for both variants
