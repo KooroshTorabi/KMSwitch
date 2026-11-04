@@ -61,6 +61,19 @@ Both variants have the same features, the same GPIO map (so one firmware fits bo
 | Back-feed into a switched-off PC 1 | ~4.7 V can reach PC 1 VBUS through the module | none |
 | Good for | building one at home | ordering a batch, smallest result |
 
+## Schematics
+
+Each variant has one readable sheet, split into framed blocks (power input, USB ports, MCU, microSD, isolation, ...) with real wires inside each block, named power symbols (`+5V_IN`, `+3V3_A`, `GND_B`, ...) and net labels between blocks.
+PDF: `hardware/<variant>/fab/kmswitch-<a|b>-schematic.pdf`. Vector versions that stay sharp at any zoom: [variant A (SVG)](docs/schematic-a.svg), [variant B (SVG)](docs/schematic-b.svg).
+
+**Variant A** (A3 sheet), click for full size:
+
+[![Schematic, variant A](docs/schematic-a.png)](docs/schematic-a.png)
+
+**Variant B** (A2 sheet), click for full size:
+
+[![Schematic, variant B](docs/schematic-b.png)](docs/schematic-b.png)
+
 ## Repository layout
 
 ```
@@ -137,6 +150,7 @@ To change anything (wall thickness, port sizes, height), open `kmswitch_case.sca
 ```
 cd tools
 python3 make_lib.py           # project library
+python3 sch_build.py a        # schematic only (layout in sch_a.py), checked against the design netlist
 python3 build.py a            # schematic + board + autoroute (Freerouting) + DRC for variant A
 python3 build.py b
 python3 make_models3d.py     # build the detailed 3D models (CadQuery, STEP)

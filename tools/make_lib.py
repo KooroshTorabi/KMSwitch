@@ -55,7 +55,8 @@ sd = symbol('MicroSD_Molex_104031', 'J', '104031-0811', 'Connector_Card:microSD_
             'microSD socket with card-detect switch (pads 9/10) and shield (pad 11)', (-10.16, 11.43, 10.16, -11.43), sdp,
             'microSD card socket')
 
-lib = [S('kicad_symbol_lib'), [S('version'), 20220914], [S('generator'), S('kicad_symbol_editor')], zero, sd]
+from schpretty import power_symbols, all_power_nets
+lib = [S('kicad_symbol_lib'), [S('version'), 20220914], [S('generator'), S('kicad_symbol_editor')], zero, sd] + power_symbols(all_power_nets())
 open(os.path.join(LIB, 'kmswitch.kicad_sym'), 'w').write(dump(lib) + '\n')
 
 # --- RP2040-Zero footprint (module on 2.54 mm headers, 15.24 mm row spacing)
