@@ -219,8 +219,10 @@ If you would like one, open an [issue](https://github.com/KooroshTorabi/KMSwitch
 This is a personal project that I build in my free time. If you like it and want to help me continue, you can support me here:
 
 <a href="https://buymeacoffee.com/kourosh"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-support-FFDD00?logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"></a>
+<a href="https://ko-fi.com/kourosht"><img src="https://img.shields.io/badge/Ko--fi-support-FF5E5B?logo=kofi&logoColor=white" alt="Support me on Ko-fi"></a>
 
-https://buymeacoffee.com/kourosh
+- Buy Me a Coffee: https://buymeacoffee.com/kourosh
+- Ko-fi: https://ko-fi.com/kourosht
 
 ## License
 
