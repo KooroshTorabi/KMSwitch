@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 270" width="480" height="270" role="img" aria-label="Edge switching: the mouse moves across to the other PC">
+<title>Edge switching: the mouse moves across to the other PC</title>
+<style>
+text{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;fill:#0f172a}
+.m{fill:#64748b;font-size:11px} .b{font-weight:600}
+.loop{animation-duration:6s;animation-iteration-count:infinite}
+@keyframes on1{0.00%{opacity:1} 40.00%{opacity:1} 40.01%{opacity:0} 84.99%{opacity:0} 85.00%{opacity:1} 100.00%{opacity:1}}@keyframes on2{0.00%{opacity:0} 40.00%{opacity:0} 40.01%{opacity:1} 85.00%{opacity:1} 85.01%{opacity:0} 100.00%{opacity:0}}.a1{animation-name:on1}.a2{animation-name:on2}@keyframes ptr{0%{transform:translate(80px,95px)}20%{transform:translate(150px,60px)}40%{transform:translate(206px,72px)}40.01%{transform:translate(272px,72px)}60%{transform:translate(380px,105px)}72%{transform:translate(330px,60px)}85%{transform:translate(272px,80px)}85.01%{transform:translate(206px,80px)}100%{transform:translate(80px,95px)}}.ptr{animation-name:ptr;animation-timing-function:ease-in-out}@keyframes flash{0%,36%{opacity:0}40%{opacity:1}48%,80%{opacity:0}85%{opacity:1}93%,100%{opacity:0}}.edge{animation-name:flash}
+</style>
+<rect x="1" y="1" width="478" height="268" rx="16" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+<path d="M218,188 C218,168 125,170 125,160" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+<path d="M262,188 C262,168 355,170 355,160" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+<path class="a1 loop" d="M218,188 C218,168 125,170 125,160" fill="none" stroke="#2563eb" stroke-width="3.5"/>
+<path class="a2 loop" d="M262,188 C262,168 355,170 355,160" fill="none" stroke="#ea580c" stroke-width="3.5"/>
+<g>
+<rect x="34" y="28" width="182" height="112" rx="8" fill="#1e293b"/>
+<rect x="40" y="34" width="170" height="100" rx="3" fill="#e2e8f0"/>
+<rect x="119.0" y="140" width="12" height="14" fill="#334155"/>
+<rect x="95.0" y="153" width="60" height="5" rx="2.5" fill="#334155"/>
+<text x="67.0" y="158" text-anchor="middle" class="b" font-size="13">PC 1</text>
+<rect class="a1 loop" x="32" y="26" width="186" height="116" rx="10" fill="none" stroke="#2563eb" stroke-width="4"/>
+</g>
+<g>
+<rect x="264" y="28" width="182" height="112" rx="8" fill="#1e293b"/>
+<rect x="270" y="34" width="170" height="100" rx="3" fill="#e2e8f0"/>
+<rect x="349.0" y="140" width="12" height="14" fill="#334155"/>
+<rect x="325.0" y="153" width="60" height="5" rx="2.5" fill="#334155"/>
+<text x="413.0" y="158" text-anchor="middle" class="b" font-size="13">PC 2</text>
+<rect class="a2 loop" x="262" y="26" width="186" height="116" rx="10" fill="none" stroke="#ea580c" stroke-width="4"/>
+</g>
+<rect class="edge loop" x="205" y="34" width="6" height="100" fill="#2563eb" opacity="0"/>
+<rect class="edge loop" x="269" y="34" width="6" height="100" fill="#ea580c" opacity="0"/>
+<path class="ptr loop" d="M0,0 L0,16 L4.5,12 L7.5,19 L10,18 L7,11 L12,11 Z" fill="#ffffff" stroke="#0f172a" stroke-width="1.6" stroke-linejoin="round"/>
+<rect x="200" y="188" width="80" height="36" rx="7" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+<text x="240.0" y="210.0" text-anchor="middle" class="b" font-size="12">kmswitch</text>
+<rect x="40" y="200" width="130" height="40" rx="6" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+<rect x="46" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="58" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="70" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="82" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="94" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="106" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="118" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="130" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="142" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="154" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="46" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="58" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="70" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="82" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="94" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="106" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="118" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="130" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="142" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="154" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="46" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="58" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="70" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="82" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="94" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="106" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="118" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="130" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="142" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="154" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<path d="M170,220 C190,220 180,206 200,206" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+<path d="M280,206 C320,206 380,216 406,216" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+<rect x="406" y="204" width="28" height="38" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+<line x1="420" y1="206" x2="420" y2="218" stroke="#0f172a" stroke-width="1.5"/>
+<text x="240.0" y="262" text-anchor="middle" class="m">Push the pointer past the screen edge: keyboard and mouse follow it</text>
+
+</svg>

@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 270" width="480" height="270" role="img" aria-label="Game mode: relative mouse, edge switching paused">
+<title>Game mode: relative mouse, edge switching paused</title>
+<style>
+text{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;fill:#0f172a}
+.m{fill:#64748b;font-size:11px} .b{font-weight:600}
+.loop{animation-duration:6s;animation-iteration-count:infinite}
+@keyframes aim{0%{transform:translate(110px,80px)}22%{transform:translate(198px,62px)}30%{transform:translate(204px,70px)}40%{transform:translate(185px,74px)}62%{transform:translate(78px,58px)}80%{transform:translate(150px,108px)}100%{transform:translate(110px,80px)}}.aim{animation-name:aim;animation-timing-function:ease-in-out}@keyframes wall{0%,20%{opacity:0}26%,36%{opacity:1}44%,100%{opacity:0}}.wall{animation-name:wall}@keyframes hit{0%,24%{opacity:0;transform:scale(.6)}30%{opacity:1;transform:scale(1)}40%,100%{opacity:0}}.hit{animation-name:hit;transform-origin:212px 84px;transform-box:view-box}
+</style>
+<rect x="1" y="1" width="478" height="268" rx="16" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+<path d="M218,188 C218,168 125,170 125,160" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+<path d="M262,188 C262,168 355,170 355,160" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+<path d="M218,188 C218,168 125,170 125,160" fill="none" stroke="#2563eb" stroke-width="3.5"/><g>
+<rect x="34" y="28" width="182" height="112" rx="8" fill="#1e293b"/>
+<rect x="40" y="34" width="170" height="100" rx="3" fill="#e2e8f0"/>
+<rect x="119.0" y="140" width="12" height="14" fill="#334155"/>
+<rect x="95.0" y="153" width="60" height="5" rx="2.5" fill="#334155"/>
+<text x="67.0" y="158" text-anchor="middle" class="b" font-size="13">PC 1</text>
+</g>
+<g>
+<rect x="264" y="28" width="182" height="112" rx="8" fill="#1e293b"/>
+<rect x="270" y="34" width="170" height="100" rx="3" fill="#e2e8f0"/>
+<rect x="349.0" y="140" width="12" height="14" fill="#334155"/>
+<rect x="325.0" y="153" width="60" height="5" rx="2.5" fill="#334155"/>
+<text x="413.0" y="158" text-anchor="middle" class="b" font-size="13">PC 2</text>
+</g>
+<rect x="32" y="26" width="186" height="116" rx="10" fill="none" stroke="#2563eb" stroke-width="4"/><rect x="40" y="96" width="170" height="38" fill="#86efac" opacity=".55"/><path d="M40,96 L80,72 L110,92 L150,64 L190,90 L210,78 L210,96 Z" fill="#94a3b8" opacity=".55"/>
+<rect x="46" y="40" width="100" height="20" rx="10" fill="#0f172a"/><text x="96" y="54" text-anchor="middle" font-size="10" class="b" style="fill:#ffffff">Win + F11 · game</text>
+<rect class="wall loop" x="207" y="34" width="5" height="100" fill="#dc2626" opacity="0"/>
+<g class="aim loop"><circle r="10" fill="none" stroke="#dc2626" stroke-width="2"/><line x1="-15" x2="-5" stroke="#dc2626" stroke-width="2"/><line x1="5" x2="15" stroke="#dc2626" stroke-width="2"/><line y1="-15" y2="-5" stroke="#dc2626" stroke-width="2"/><line y1="5" y2="15" stroke="#dc2626" stroke-width="2"/><circle r="1.8" fill="#dc2626"/></g>
+<g class="hit loop"><rect x="226" y="74" width="28" height="22" rx="4" fill="#dc2626"/><path d="M232,74 v-6 a8,8 0 0 1 16,0 v6" fill="none" stroke="#dc2626" stroke-width="3"/><circle cx="240" cy="85" r="2.6" fill="#ffffff"/></g>
+<rect x="200" y="188" width="80" height="36" rx="7" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+<text x="240.0" y="210.0" text-anchor="middle" class="b" font-size="12">kmswitch</text>
+<rect x="40" y="200" width="130" height="40" rx="6" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+<rect x="46" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="58" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="70" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="82" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="94" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="106" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="118" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="130" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="142" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="154" y="206" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="46" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="58" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="70" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="82" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="94" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="106" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="118" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="130" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="142" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="154" y="216" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="46" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="58" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="70" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="82" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="94" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="106" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="118" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="130" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="142" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<rect x="154" y="226" width="10" height="8" rx="1.5" fill="#cbd5e1"/>
+<path d="M170,220 C190,220 180,206 200,206" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+<path d="M280,206 C320,206 380,216 406,216" fill="none" stroke="#cbd5e1" stroke-width="3"/>
+<rect x="406" y="204" width="28" height="38" rx="14" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+<line x1="420" y1="206" x2="420" y2="218" stroke="#0f172a" stroke-width="1.5"/>
+<text x="240.0" y="262" text-anchor="middle" class="m">Relative mouse for games: the pointer stays on this PC, edges are locked</text>
+
+</svg>

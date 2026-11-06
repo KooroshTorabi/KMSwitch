@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 270" width="480" height="270" role="img" aria-label="Hotkey switching with Win+F12">
+<title>Hotkey switching with Win+F12</title>
+<style>
+text{font-family:-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;fill:#0f172a}
+.m{fill:#64748b;font-size:11px} .b{font-weight:600}
+.loop{animation-duration:6s;animation-iteration-count:infinite}
+@keyframes on1{0.00%{opacity:1} 25.00%{opacity:1} 25.01%{opacity:0} 75.00%{opacity:0} 75.01%{opacity:1} 100.00%{opacity:1}}@keyframes on2{0.00%{opacity:0} 25.00%{opacity:0} 25.01%{opacity:1} 75.00%{opacity:1} 75.01%{opacity:0} 100.00%{opacity:0}}.a1{animation-name:on1}.a2{animation-name:on2}@keyframes press{0%,15%{transform:translateY(0)}18%,26%{transform:translateY(3px)}29%,65%{transform:translateY(0)}68%,76%{transform:translateY(3px)}79%,100%{transform:translateY(0)}}.k{animation-name:press}@keyframes kfill{0%,15%{fill:#ffffff}18%,26%{fill:#fde68a}29%,65%{fill:#ffffff}68%,76%{fill:#fde68a}79%,100%{fill:#ffffff}}.kf{animation-name:kfill}@keyframes caret{0%,49%{opacity:1}50%,100%{opacity:0}}.caret{animation:caret 1s infinite step-end}@keyframes type{0%{width:0}100%{width:110px}}.t1{animation:type 1.5s steps(14) infinite alternate}
+</style>
+<rect x="1" y="1" width="478" height="268" rx="16" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+<path d="M200,180 C200,160 125,170 125,160" fill="none" stroke="#cbd5e1" stroke-width="3"/><path d="M280,180 C280,160 355,170 355,160" fill="none" stroke="#cbd5e1" stroke-width="3"/><path class="a1 loop" d="M200,180 C200,160 125,170 125,160" fill="none" stroke="#2563eb" stroke-width="3.5"/><path class="a2 loop" d="M280,180 C280,160 355,170 355,160" fill="none" stroke="#ea580c" stroke-width="3.5"/>
+<g>
+<rect x="34" y="28" width="182" height="112" rx="8" fill="#1e293b"/>
+<rect x="40" y="34" width="170" height="100" rx="3" fill="#e2e8f0"/>
+<rect x="119.0" y="140" width="12" height="14" fill="#334155"/>
+<rect x="95.0" y="153" width="60" height="5" rx="2.5" fill="#334155"/>
+<text x="67.0" y="158" text-anchor="middle" class="b" font-size="13">PC 1</text>
+<rect class="a1 loop" x="32" y="26" width="186" height="116" rx="10" fill="none" stroke="#2563eb" stroke-width="4"/>
+</g>
+<g>
+<rect x="264" y="28" width="182" height="112" rx="8" fill="#1e293b"/>
+<rect x="270" y="34" width="170" height="100" rx="3" fill="#e2e8f0"/>
+<rect x="349.0" y="140" width="12" height="14" fill="#334155"/>
+<rect x="325.0" y="153" width="60" height="5" rx="2.5" fill="#334155"/>
+<text x="413.0" y="158" text-anchor="middle" class="b" font-size="13">PC 2</text>
+<rect class="a2 loop" x="262" y="26" width="186" height="116" rx="10" fill="none" stroke="#ea580c" stroke-width="4"/>
+</g>
+<g class="a1 loop"><rect class="t1" x="58" y="60" width="110" height="7" rx="2" fill="#94a3b8"/><rect x="58" y="76" width="80" height="7" rx="2" fill="#94a3b8" opacity=".6"/><rect x="58" y="92" width="96" height="7" rx="2" fill="#94a3b8" opacity=".6"/><rect class="caret" x="60" y="106" width="2" height="12" fill="#0f172a"/></g>
+<g class="a2 loop"><rect class="t1" x="288" y="60" width="110" height="7" rx="2" fill="#94a3b8"/><rect x="288" y="76" width="80" height="7" rx="2" fill="#94a3b8" opacity=".6"/><rect x="288" y="92" width="96" height="7" rx="2" fill="#94a3b8" opacity=".6"/><rect class="caret" x="290" y="106" width="2" height="12" fill="#0f172a"/></g>
+<rect x="120" y="180" width="240" height="64" rx="8" fill="#ffffff" stroke="#0f172a" stroke-width="2"/>
+<rect x="128.0" y="188" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="144.5" y="188" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="161.0" y="188" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="177.5" y="188" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="194.0" y="188" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="210.5" y="188" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="227.0" y="188" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="243.5" y="188" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="260.0" y="188" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="276.5" y="188" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="293.0" y="188" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="309.5" y="188" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="342.5" y="188" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="128.0" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="144.5" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="161.0" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="177.5" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="194.0" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="210.5" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="227.0" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="243.5" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="260.0" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="276.5" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="293.0" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="309.5" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="326.0" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="342.5" y="205" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="128.0" y="222" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="161.0" y="222" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="177.5" y="222" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="194.0" y="222" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="210.5" y="222" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="227.0" y="222" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="243.5" y="222" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="260.0" y="222" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="276.5" y="222" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="293.0" y="222" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="309.5" y="222" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="326.0" y="222" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<rect x="342.5" y="222" width="14" height="14" rx="2.5" fill="#cbd5e1"/>
+<g class="k loop"><rect class="kf loop" x="324.0" y="188" width="20" height="14" rx="2.5" fill="#ffffff" stroke="#0f172a" stroke-width="1.5"/><text x="334.0" y="198.5" text-anchor="middle" font-size="8.5" class="b">F12</text></g>
+<g class="k loop"><rect class="kf loop" x="142.5" y="222" width="20" height="14" rx="2.5" fill="#ffffff" stroke="#0f172a" stroke-width="1.5"/><text x="152.5" y="232.5" text-anchor="middle" font-size="8.5" class="b">Win</text></g>
+<text x="240.0" y="262" text-anchor="middle" class="m">Win + F12 switches keyboard and mouse; works in BIOS too, no software</text>
+
+</svg>

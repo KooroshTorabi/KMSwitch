@@ -26,6 +26,37 @@ BIOS, and the two PCs stay galvanically isolated.
 
 > **Status:** hardware rev 1.0 and firmware 1.0 are complete but not yet built or tested on real boards. See *Before you order* below and [firmware/README.md](firmware/README.md).
 
+## What it does
+
+<table>
+<tr>
+<td width="50%"><img src="docs/features/1-shared-drive.svg" alt="Shared drive"><br>
+<b>1. Copy files between the PCs</b><br>
+The box's microSD card shows up as a USB drive on the active PC. Save a file there, switch, and open it on the other PC. No network or cloud needed.</td>
+<td width="50%"><img src="docs/features/2-edge-switch.svg" alt="Edge switching"><br>
+<b>2. Switch by moving the mouse</b><br>
+Push the pointer past the edge of PC 1's screen and it appears on PC 2, and the keyboard follows. You arrange the screens once on the settings page, like the monitor layout in Windows.</td>
+</tr>
+<tr>
+<td><img src="docs/features/3-hotkey.svg" alt="Hotkey switching"><br>
+<b>3. Switch from the keyboard</b><br>
+<b>Win + F12</b> (or any key you choose) switches keyboard and mouse together. The PCs never see the hotkey. It works in the BIOS and at the login screen.</td>
+<td><img src="docs/features/4-game-mode.svg" alt="Game mode"><br>
+<b>4. Game mode</b><br>
+<b>Win + F11</b> switches the active PC to relative mouse movement, which games, Blender and remote-desktop tools need. Edge switching pauses so a fast flick never jumps to the other PC.</td>
+</tr>
+<tr>
+<td><img src="docs/features/5-rgb-led.svg" alt="RGB LED"><br>
+<b>5. RGB LED connection</b><br>
+Header J6 drives a WS2812 / SK6812 LED or short strip, lit in the colour of the active PC. Good for your own case or a desk light.</td>
+<td><img src="docs/features/6-power.svg" alt="Separate power"><br>
+<b>6. Separate power, isolated PCs</b><br>
+The box runs from its own 5 V USB-C adapter, so the keyboard keeps working when PC 1 is off. A digital isolator keeps the grounds of the two PCs apart (no ground loops).</td>
+</tr>
+</table>
+
+> Clipboard copy-paste of text would need a program on each PC. kmswitch deliberately needs no software on the PCs, so it shares files through the drive instead.
+
 ![variant B board](docs/board-b-front.png)
 
 ## How it works
@@ -176,6 +207,20 @@ openscad -D 'variant="A"' -D 'part="bottom"' -o ../enclosure/stl/kmswitch-a-bott
 ```
 Needs KiCad 7 with its Python module, Java, OpenSCAD and Freerouting 1.9 (put `freerouting.jar` in `tools/` or set `FREEROUTING_JAR`).
 Routing runs Freerouting headless (`xvfb-run`); the result can differ slightly between runs.
+
+## Get a ready-made one
+
+kmswitch is a personal project. I plan to order a small batch of boards; when I have built more units than I need, I can send ready-made ones to people who cannot build one themselves, to wherever I am able to ship.
+Please note: **nothing has been ordered or tested yet**, so there are no units today. The more people are interested, the cheaper each unit gets, because boards and assembly cost much less per piece in larger batches.
+If you would like one, open an [issue](https://github.com/KooroshTorabi/KMSwitch/issues) titled *"I'd like one"* and say roughly where you are.
+
+## Support the project
+
+This is a personal project that I build in my free time. If you like it and want to help me continue, you can support me here:
+
+<a href="https://buymeacoffee.com/kourosh"><img src="https://img.shields.io/badge/Buy%20me%20a%20coffee-support-FFDD00?logo=buymeacoffee&logoColor=black" alt="Buy me a coffee"></a>
+
+https://buymeacoffee.com/kourosh
 
 ## License
 
