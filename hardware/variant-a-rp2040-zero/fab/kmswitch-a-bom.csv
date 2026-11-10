@@ -1,5 +1,5 @@
 Comment,Designator,Footprint,Quantity,LCSC Part #,Notes
-100uF 10V,C1,CP_Elec_6.3x7.7,1,C294520,"VT1V101M-CRE77, 100uF 35V 6.3x7.7 (higher voltage is fine)"
+100uF 10V,C1,CP_Elec_6.3x7.7,1,C3339,"RVT1V101M0607, 100uF 35V 6.3x7.7 (higher voltage is fine)"
 100nF,"C2,C3,C4,C6",C_0805_2012Metric,4,C49678,
 10uF,C5,C_0805_2012Metric,1,C15850,
 B5819W,D1,D_SOD-123,1,C8598,

@@ -6,10 +6,21 @@ sys.path.insert(0, os.path.dirname(__file__))
 from build import VARIANTS, ROOT
 
 
+# JLCPCB rotation corrections (degrees, added to the KiCad rotation) by footprint name prefix.
+# Checked against the JLCPCB placement viewer for variant B (Nov 2026): their 3D models for these
+# packages sit 90 deg (SOIC, SOT-23-5/6) or 180 deg (Molex microSD) off the KiCad orientation.
+JLC_ROT = {
+    'SOIC-8': -90,
+    'SOT-23-5': -90,
+    'SOT-23-6': -90,
+    'microSD_HC_Molex_104031-0811': 180,
+}
+
+
 # LCSC / JLCPCB part numbers for parts whose design entry has no LCSC field.
 # key: (value, footprint name without library) -> (LCSC #, note)
 LCSC = {
-    ('100uF 10V', 'CP_Elec_6.3x7.7'): ('C294520', 'VT1V101M-CRE77, 100uF 35V 6.3x7.7 (higher voltage is fine)'),
+    ('100uF 10V', 'CP_Elec_6.3x7.7'): ('C3339', 'RVT1V101M0607, 100uF 35V 6.3x7.7 (higher voltage is fine)'),
     ('100nF', 'C_0805_2012Metric'): ('C49678', ''),
     ('10uF', 'C_0805_2012Metric'): ('C15850', ''),
     ('100nF', 'C_0603_1608Metric'): ('C14663', ''),
@@ -74,7 +85,11 @@ def main(v):
         for r in rows:
             if r['Ref'].startswith(('H', 'TP')):
                 continue
-            w.writerow([r['Ref'], r['PosX'] + 'mm', r['PosY'] + 'mm', 'Top' if r['Side'] == 'top' else 'Bottom', r['Rot']])
+            rot = float(r['Rot'])
+            for pre, d in JLC_ROT.items():
+                if r['Package'].startswith(pre):
+                    rot = (rot + d) % 360
+            w.writerow([r['Ref'], r['PosX'] + 'mm', r['PosY'] + 'mm', 'Top' if r['Side'] == 'top' else 'Bottom', '%.6f' % rot])
             smd_refs.add(r['Ref'])
     # BOM grouped by value + footprint
     groups = {}

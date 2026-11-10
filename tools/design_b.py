@@ -45,7 +45,7 @@ def core(s, cx, cy, n0, vin, gpio, fdx=0.0):
     c.append(rp2040('U%d' % n0, s, gpio, at(0, 0)))
     c.append(C('U%d' % (n0 + 1), 'Memory_Flash:W25Q32JVSS', 'W25Q16JVSSIQ (2 MB)', 'Package_SO:SOIC-8_5.23x5.23mm_P1.27mm',
                {'1': 'QSPI_SS_' + s, '2': 'QSPI_SD1_' + s, '3': 'QSPI_SD2_' + s, '4': G, '5': 'QSPI_SD0_' + s,
-                '6': 'QSPI_SCLK_' + s, '7': 'QSPI_SD3_' + s, '8': V3}, at(-11.0 + fdx, -7.4), fields={'LCSC': 'C131024'}))
+                '6': 'QSPI_SCLK_' + s, '7': 'QSPI_SD3_' + s, '8': V3}, at(-11.0 + fdx, -7.4), fields={'LCSC': 'C131025'}))
     c.append(C('U%d' % (n0 + 2), 'Regulator_Linear:AP2112K-3.3', 'AP2112K-3.3', 'Package_TO_SOT_SMD:SOT-23-5',
                {'1': vin, '2': G, '3': vin, '4': None, '5': V3}, at(8.5, -1.0), fields={'LCSC': 'C51118'}))
     c.append(C('Y%d' % n0, 'Device:Crystal_GND24', '12MHz', 'Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm',

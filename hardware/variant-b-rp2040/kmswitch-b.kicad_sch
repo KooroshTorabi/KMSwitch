@@ -11366,7 +11366,7 @@
         hide
       )
     )
-    (property "LCSC" "C131024"
+    (property "LCSC" "C131025"
       (at 45.72 198.12 0)
       (effects
         (font
@@ -15317,7 +15317,7 @@
         hide
       )
     )
-    (property "LCSC" "C131024"
+    (property "LCSC" "C131025"
       (at 386.08 198.12 0)
       (effects
         (font
