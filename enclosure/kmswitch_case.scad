@@ -28,7 +28,9 @@ above     = variant == "A" ? 11.0 : 9.0;   // room above the board top (modules 
 corner_r  = 3.0;
 lip       = 1.6;               // lid lip depth
 fit       = 0.2;               // lid lip clearance
-light_win = 0.6;               // lid thickness over LED windows (print in white/translucent)
+light_win = 1.0;               // lid thickness over LED windows (print in white/translucent resin)
+labels    = false;             // engraved text; off by default: small letters leave walls under 0.8 mm,
+                               // which JLC3DP and most printers reject
 
 /* [Screws: M2.5 self-tapping into the standoffs] */
 screw_d   = 2.8;
@@ -90,7 +92,7 @@ module bottom() {
         translate([bx(sd[0]), -0.01, top_z + sd[1]]) scale([1, 0.35, 0.6]) rotate([-90, 0, 0])
             cylinder(r = 8, h = 3, $fn = 60);
         // labels on the back wall
-        for (l = back_labels)
+        if (labels) for (l = back_labels)
             translate([bx(l[1]), outer_d - 0.6, board_z - 2.6])
                 rotate([90, 0, 180]) linear_extrude(1) text(l[0], size = 2.6, halign = "center", valign = "center",
                                                             font = "Liberation Sans:style=Bold");
@@ -125,6 +127,7 @@ module lid() {
             cylinder(d = w[2], h = lid_t, $fn = 40);
         for (b = button_holes) translate([bx(b[0]), by(b[1]), -1]) cylinder(d = 1.8, h = lid_t + 2, $fn = 20);
         // engraved top labels
+        if (labels) {
         translate([outer_w / 2, outer_d / 2 + 4, lid_t - 0.6]) linear_extrude(1)
             text("kmswitch", size = 6, halign = "center", valign = "center", font = "Liberation Sans:style=Bold");
         translate([outer_w / 2, outer_d / 2 - 4, lid_t - 0.6]) linear_extrude(1)
@@ -135,6 +138,7 @@ module lid() {
             text("SD", size = 3, halign = "center", valign = "center", font = "Liberation Sans:style=Bold");
         translate([bx(usba[0]), 5, lid_t - 0.6]) linear_extrude(1)
             text("USB", size = 3, halign = "center", valign = "center", font = "Liberation Sans:style=Bold");
+        }
     }
 }
 
